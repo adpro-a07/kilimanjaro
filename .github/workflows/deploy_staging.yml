@@ -2,7 +2,7 @@ name: Deploy to Staging Amazon ECS
 on:
   push:
     branches:
-      - main
+      - staging
 
 permissions:
   id-token: write # This is required for requesting the JWT
