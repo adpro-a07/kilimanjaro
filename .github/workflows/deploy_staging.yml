@@ -56,3 +56,27 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::000684258120:role/github-ecr-role
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Re-configure AWS Credentials for ECS
+        uses: aws-actions/configure-aws-credentials@v4
+        env:
+          AWS_REGION: ap-southeast-1 # used for ECS deployment
+        with:
+          role-to-assume: arn:aws:iam::000684258120:role/github-ecr-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
