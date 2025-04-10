@@ -1,4 +1,4 @@
-name: Deploy to Production Amazon ECS
+name: Deploy to Staging Amazon ECS
 on:
   push:
     branches:
@@ -10,7 +10,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: adpro-a07-prod/kilimanjaro
+  ECR_REPOSITORY: adpro-a07-staging/kilimanjaro
   REGISTRY_ALIAS: u3l0u1d1
   ECS_SERVICE: MY_ECS_SERVICE                 # set this to your Amazon ECS service name
   ECS_CLUSTER: MY_ECS_CLUSTER                 # set this to your Amazon ECS cluster name
