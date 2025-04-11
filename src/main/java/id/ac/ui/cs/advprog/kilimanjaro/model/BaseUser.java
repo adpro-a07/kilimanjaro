@@ -13,8 +13,8 @@ import java.util.UUID;
 @Setter
 public abstract class BaseUser {
     protected final UUID id;
-    protected String fullName;
-    protected String email;
+    protected final String fullName;
+    protected final String email;
     protected String phoneNumber;
     protected String password;
 
