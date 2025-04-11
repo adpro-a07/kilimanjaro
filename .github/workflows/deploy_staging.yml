@@ -1,9 +1,5 @@
 name: Deploy to Staging Amazon ECS
 on:
-  push:
-    branches:
-      - staging
-
   workflow_run:
     workflows: ["Test Java Project"]
     types:
@@ -23,6 +19,7 @@ env:
   CONTAINER_NAME: kilimanjaro-staging
 
 jobs:
+  if: "github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'staging'"
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
