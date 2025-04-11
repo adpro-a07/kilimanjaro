@@ -17,7 +17,7 @@ USER ${USER_NAME}
 WORKDIR /opt/kilimanjaro
 COPY --from=builder --chown=${USER_UID}:${USER_GID} /src/kilimanjaro/build/libs/*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 3000
 
 ENTRYPOINT ["java"]
-CMD ["-jar", "app.jar"]
+CMD ["-jar", "app.jar", "--server.port=3000"]
