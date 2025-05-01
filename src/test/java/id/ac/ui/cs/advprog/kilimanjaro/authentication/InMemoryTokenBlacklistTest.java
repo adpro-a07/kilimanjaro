@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class InMemoryTokenBlacklistTest {
+public class InMemoryTokenBlacklistTest {
 
     private InMemoryTokenBlacklist blacklist;
     private final String TOKEN = "test.jwt.token";
