@@ -6,4 +6,5 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
 
     <include file="db/changelog/2025/05/01-01-baseline-changelog.xml"/>
+    <include file="db/changelog/2025/05/01-01-refactor-user-role-strategy.xml"/>
 </databaseChangeLog>
