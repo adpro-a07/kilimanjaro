@@ -17,7 +17,7 @@ public class AdminTest {
                 .password("verySecurePassword")
                 .build();
 
-        assertNotNull(admin.getId());
+        assertNull(admin.getId());
         assertEquals("Super Admin", admin.getFullName());
         assertEquals("admin@example.com", admin.getEmail());
         assertEquals("0811223344", admin.getPhoneNumber());

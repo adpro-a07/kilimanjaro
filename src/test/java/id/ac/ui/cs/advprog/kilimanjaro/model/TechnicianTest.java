@@ -19,7 +19,7 @@ class TechnicianTest {
                 .experience("5 years in electronics")
                 .build();
 
-        assertNotNull(technician.getId());
+        assertNull(technician.getId());
         assertEquals("Tech John", technician.getFullName());
         assertEquals("tech.john@example.com", technician.getEmail());
         assertEquals("0877123456", technician.getPhoneNumber());

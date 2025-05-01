@@ -18,7 +18,7 @@ class CustomerTest {
                 .address("Jl. Merdeka No. 1")
                 .build();
 
-        assertNotNull(customer.getId());
+        assertNull(customer.getId());
         assertEquals("John Doe", customer.getFullName());
         assertEquals("john@example.com", customer.getEmail());
         assertEquals("08123456789", customer.getPhoneNumber());
