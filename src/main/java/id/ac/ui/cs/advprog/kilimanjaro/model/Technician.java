@@ -1,7 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,38 +14,28 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Technician extends BaseUser {
-
-    @NotBlank
     @Size(max = 200)
-    @Column(nullable = false, length = 200)
+    @Column(length = 200)
     private String address;
 
     @Size(max = 500)
     @Column(length = 500)
     private String experience;
 
-    @Column(nullable = false)
-    private int totalJobsDone = 0;
+    @Column()
+    private Integer totalJobsDone = 0;
 
-    @Column(nullable = false)
-    private long totalIncome = 0;
+    @Column()
+    private Long totalIncome = 0L;
 
-    /**
-     * Increases the number of jobs done and total income earned.
-     *
-     * @param count  The number of jobs to add
-     * @param income The income amount to add
-     * @throws IllegalArgumentException if count is not positive or income is negative
-     */
     public void addJobDone(int count, long income) {
         if (count <= 0 || income < 0) {
             throw new IllegalArgumentException("Count must be positive and income must be non-negative");
         }
-        this.totalJobsDone += count;
-        this.totalIncome += income;
+        this.totalJobsDone = (this.totalJobsDone == null ? 0 : this.totalJobsDone) + count;
+        this.totalIncome = (this.totalIncome == null ? 0L : this.totalIncome) + income;
     }
 
-    // Required by JPA
     protected Technician() {
         super();
     }
@@ -55,11 +44,10 @@ public class Technician extends BaseUser {
         super(builder);
         this.address = builder.address;
         this.experience = builder.experience;
+        this.totalJobsDone = 0;
+        this.totalIncome = 0L;
     }
 
-    /**
-     * Builder class for creating Technician instances.
-     */
     public static class TechnicianBuilder extends BaseUserBuilder<TechnicianBuilder> {
         private String address;
         private String experience;
@@ -76,9 +64,6 @@ public class Technician extends BaseUser {
 
         @Override
         public Technician build() {
-            if (address == null || address.isBlank()) {
-                throw new IllegalArgumentException("Address must not be blank");
-            }
             return new Technician(this);
         }
 

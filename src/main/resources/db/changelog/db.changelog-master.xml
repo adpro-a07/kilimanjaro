@@ -7,4 +7,5 @@
 
     <include file="db/changelog/2025/05/01-01-baseline-changelog.xml"/>
     <include file="db/changelog/2025/05/01-01-refactor-user-role-strategy.xml"/>
+    <include file="db/changelog/2025/05/01-01-drop-not-null-constraint-on-optional-fields.xml"/>
 </databaseChangeLog>

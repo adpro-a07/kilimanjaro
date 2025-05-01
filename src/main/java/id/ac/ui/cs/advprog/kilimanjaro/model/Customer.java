@@ -11,9 +11,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Customer extends BaseUser {
-    @NotBlank
     @Size(max = 200)
-    @Column(nullable = false, length = 200)
+    @Column(length = 200)
     private String address;
 
     private Customer(CustomerBuilder builder) {
