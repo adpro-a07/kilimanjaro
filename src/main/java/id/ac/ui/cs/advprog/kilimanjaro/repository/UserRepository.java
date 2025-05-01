@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface BaseUserRepository extends JpaRepository<BaseUser, Long> {
+public interface UserRepository extends JpaRepository<BaseUser, Long> {
     Optional<BaseUser> findByFullName(@NotBlank @Size(max = 100) String fullName);
 
     Optional<BaseUser> findByEmail(@NotBlank @Email @Size(max = 100) String email);
