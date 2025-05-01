@@ -6,11 +6,11 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class UserTest {
+class CustomerTest {
 
     @Test
     void testUserBuilderCreatesUserSuccessfully() {
-        User user = new User.UserBuilder()
+        Customer customer = new Customer.UserBuilder()
                 .fullName("John Doe")
                 .email("john@example.com")
                 .phoneNumber("08123456789")
@@ -18,18 +18,18 @@ class UserTest {
                 .address("Jl. Merdeka No. 1")
                 .build();
 
-        assertNotNull(user.getId());
-        assertEquals("John Doe", user.getFullName());
-        assertEquals("john@example.com", user.getEmail());
-        assertEquals("08123456789", user.getPhoneNumber());
-        assertEquals("securePassword", user.getPassword());
-        assertEquals("Jl. Merdeka No. 1", user.getAddress());
+        assertNotNull(customer.getId());
+        assertEquals("John Doe", customer.getFullName());
+        assertEquals("john@example.com", customer.getEmail());
+        assertEquals("08123456789", customer.getPhoneNumber());
+        assertEquals("securePassword", customer.getPassword());
+        assertEquals("Jl. Merdeka No. 1", customer.getAddress());
     }
 
     @Test
     void testUserBuilderThrowsExceptionWhenFullNameIsMissing() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new User.UserBuilder()
+                new Customer.UserBuilder()
                         .email("john@example.com")
                         .phoneNumber("08123456789")
                         .password("securePassword")
@@ -42,7 +42,7 @@ class UserTest {
     @Test
     void testUserBuilderThrowsExceptionWhenEmailIsMissing() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new User.UserBuilder()
+                new Customer.UserBuilder()
                         .fullName("John Doe")
                         .phoneNumber("08123456789")
                         .password("securePassword")
@@ -55,7 +55,7 @@ class UserTest {
     @Test
     void testUserBuilderThrowsExceptionWhenPhoneNumberIsMissing() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new User.UserBuilder()
+                new Customer.UserBuilder()
                         .fullName("John Doe")
                         .email("john@example.com")
                         .password("securePassword")
@@ -68,7 +68,7 @@ class UserTest {
     @Test
     void testUserBuilderThrowsExceptionWhenPasswordIsMissing() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new User.UserBuilder()
+                new Customer.UserBuilder()
                         .fullName("John Doe")
                         .email("john@example.com")
                         .phoneNumber("08123456789")
@@ -81,7 +81,7 @@ class UserTest {
     @Test
     void testUserBuilderCanSetCustomId() {
         UUID customId = UUID.randomUUID();
-        User user = new User.UserBuilder()
+        Customer customer = new Customer.UserBuilder()
                 .id(customId)
                 .fullName("Jane Doe")
                 .email("jane@example.com")
@@ -90,6 +90,6 @@ class UserTest {
                 .address("Jl. Sudirman No. 2")
                 .build();
 
-        assertEquals(customId, user.getId());
+        assertEquals(customId, customer.getId());
     }
 }

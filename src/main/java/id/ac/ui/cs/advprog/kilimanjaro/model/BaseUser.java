@@ -1,5 +1,9 @@
 package id.ac.ui.cs.advprog.kilimanjaro.model;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,12 +15,40 @@ import java.util.UUID;
  */
 @Getter
 @Setter
+@Entity
+@Table(name = "base_users")
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class BaseUser {
-    protected final UUID id;
-    protected final String fullName;
-    protected final String email;
-    protected String phoneNumber;
-    protected String password;
+    @Id
+    @GeneratedValue
+    @Column(nullable = false, updatable = false, columnDefinition = "UUID")
+    private UUID id;
+
+    @NotBlank
+    @Size(max = 100)
+    @Column(nullable = false)
+    private String fullName;
+
+    @NotBlank
+    @Email
+    @Size(max = 100)
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @NotBlank
+    @Size(max = 15)
+    @Column(nullable = false)
+    private String phoneNumber;
+
+    @NotBlank
+    @Size(min = 8, max = 100)
+    @Column(nullable = false)
+    private String password;
+
+    // Default constructor for JPA
+    protected BaseUser() {
+        this.id = UUID.randomUUID(); // Generate a UUID by default
+    }
 
     protected BaseUser(BaseUserBuilder<?> builder) {
         if (builder.id == null || builder.fullName == null || builder.email == null
