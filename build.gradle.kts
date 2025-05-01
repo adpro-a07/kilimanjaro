@@ -39,13 +39,43 @@ val webdrivermanagerVersion = "5.6.3"
 val junitJupiterVersion = "5.9.1"
 
 dependencies {
+    // Springboot Starters
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    // Exclude default hibernate-core and add specific version
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa") {
+        exclude(group = "org.hibernate.orm", module = "hibernate-core")
+    }
+    implementation("org.hibernate.orm:hibernate-core:6.5.2.Final")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+
+    // JWT (jjwt)
+    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
+
+    // H2 Database (for testing/dev)
+    runtimeOnly("com.h2database:h2")
+
+    // PostgreSQL Database (for production)
+    implementation("org.postgresql:postgresql")
+
+    // DB Migrations using Liquibase
+    implementation("org.liquibase:liquibase-core")
+
+    // dotenv-java
+    implementation("io.github.cdimascio:dotenv-java:3.2.0")
+
+    // Test Dependencies
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
+
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.seleniumhq.selenium:selenium-java:$seleniumJavaVersion")
     testImplementation("io.github.bonigarcia:selenium-jupiter:$seleniumJupiterVersion")
     testImplementation("io.github.bonigarcia:webdrivermanager:$webdrivermanagerVersion")
