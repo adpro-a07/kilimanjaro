@@ -24,6 +24,7 @@ class CustomerTest {
         assertEquals("08123456789", customer.getPhoneNumber());
         assertEquals("securePassword", customer.getPassword());
         assertEquals("Jl. Merdeka No. 1", customer.getAddress());
+        assertEquals("CUSTOMER", customer.getRole().name());
     }
 
     @Test

@@ -22,6 +22,7 @@ public class AdminTest {
         assertEquals("admin@example.com", admin.getEmail());
         assertEquals("0811223344", admin.getPhoneNumber());
         assertEquals("verySecurePassword", admin.getPassword());
+        assertEquals("ADMIN", admin.getRole().name());
     }
 
     @Test

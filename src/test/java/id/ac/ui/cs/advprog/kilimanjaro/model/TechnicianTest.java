@@ -24,6 +24,7 @@ class TechnicianTest {
         assertEquals("tech.john@example.com", technician.getEmail());
         assertEquals("0877123456", technician.getPhoneNumber());
         assertEquals("techStrong", technician.getPassword());
+        assertEquals("TECHNICIAN", technician.getRole().name());
     }
 
     @Test
