@@ -16,7 +16,7 @@ public class Customer extends BaseUser {
     @Column(nullable = false, length = 200)
     private String address;
 
-    private Customer(UserBuilder builder) {
+    private Customer(CustomerBuilder builder) {
         super(builder);
         this.address = builder.address;
     }
@@ -25,10 +25,10 @@ public class Customer extends BaseUser {
         super(); // Required by JPA
     }
 
-    public static class UserBuilder extends BaseUserBuilder<UserBuilder> {
+    public static class CustomerBuilder extends BaseUserBuilder<CustomerBuilder> {
         private String address;
 
-        public UserBuilder address(String address) {
+        public CustomerBuilder address(String address) {
             this.address = address;
             return this;
         }
@@ -39,7 +39,7 @@ public class Customer extends BaseUser {
         }
 
         @Override
-        protected UserBuilder self() {
+        protected CustomerBuilder self() {
             return this;
         }
     }

@@ -10,7 +10,7 @@ class CustomerTest {
 
     @Test
     void testUserBuilderCreatesUserSuccessfully() {
-        Customer customer = new Customer.UserBuilder()
+        Customer customer = new Customer.CustomerBuilder()
                 .fullName("John Doe")
                 .email("john@example.com")
                 .phoneNumber("08123456789")
@@ -30,7 +30,7 @@ class CustomerTest {
     @Test
     void testUserBuilderThrowsExceptionWhenFullNameIsMissing() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new Customer.UserBuilder()
+                new Customer.CustomerBuilder()
                         .email("john@example.com")
                         .phoneNumber("08123456789")
                         .password("securePassword")
@@ -43,7 +43,7 @@ class CustomerTest {
     @Test
     void testUserBuilderThrowsExceptionWhenEmailIsMissing() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new Customer.UserBuilder()
+                new Customer.CustomerBuilder()
                         .fullName("John Doe")
                         .phoneNumber("08123456789")
                         .password("securePassword")
@@ -56,7 +56,7 @@ class CustomerTest {
     @Test
     void testUserBuilderThrowsExceptionWhenPhoneNumberIsMissing() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new Customer.UserBuilder()
+                new Customer.CustomerBuilder()
                         .fullName("John Doe")
                         .email("john@example.com")
                         .password("securePassword")
@@ -69,7 +69,7 @@ class CustomerTest {
     @Test
     void testUserBuilderThrowsExceptionWhenPasswordIsMissing() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new Customer.UserBuilder()
+                new Customer.CustomerBuilder()
                         .fullName("John Doe")
                         .email("john@example.com")
                         .phoneNumber("08123456789")
@@ -82,7 +82,7 @@ class CustomerTest {
     @Test
     void testUserBuilderCanSetCustomId() {
         UUID customId = UUID.randomUUID();
-        Customer customer = new Customer.UserBuilder()
+        Customer customer = new Customer.CustomerBuilder()
                 .id(customId)
                 .fullName("Jane Doe")
                 .email("jane@example.com")
