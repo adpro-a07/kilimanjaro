@@ -11,8 +11,7 @@ import lombok.Setter;
  * It extends the BaseUser class with additional fields for address, experience, job tracking and income.
  */
 @Entity
-@Table(name = "technicians")
-@PrimaryKeyJoinColumn(name = "id")
+@DiscriminatorValue("TECHNICIAN")
 @Getter
 @Setter
 public class Technician extends BaseUser {

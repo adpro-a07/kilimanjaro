@@ -1,17 +1,13 @@
 package id.ac.ui.cs.advprog.kilimanjaro.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "customers")
-@PrimaryKeyJoinColumn(name = "id")
+@DiscriminatorValue("CUSTOMER")
 @Getter
 @Setter
 public class Customer extends BaseUser {

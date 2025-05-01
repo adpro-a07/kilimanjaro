@@ -16,8 +16,9 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "base_users")
-@Inheritance(strategy = InheritanceType.JOINED)
+@Table(name = "users")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
 public abstract class BaseUser {
     @Id
     @GeneratedValue
@@ -46,12 +47,10 @@ public abstract class BaseUser {
     private String password;
 
     // Default constructor for JPA
-    protected BaseUser() {
-        this.id = UUID.randomUUID(); // Generate a UUID by default
-    }
+    protected BaseUser() {}
 
     protected BaseUser(BaseUserBuilder<?> builder) {
-        if (builder.id == null || builder.fullName == null || builder.email == null
+        if (builder.fullName == null || builder.email == null
                 || builder.phoneNumber == null || builder.password == null) {
             throw new IllegalArgumentException("All fields must be non-null");
         }
@@ -73,9 +72,7 @@ public abstract class BaseUser {
         private String phoneNumber;
         private String password;
 
-        public BaseUserBuilder() {
-            this.id = UUID.randomUUID(); // Generate a UUID by default
-        }
+        public BaseUserBuilder() {}
 
         public T id(UUID id) {
             this.id = id;
