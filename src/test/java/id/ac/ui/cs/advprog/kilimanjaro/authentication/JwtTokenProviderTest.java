@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication;
 
+import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class JwtTokenServiceTest {
+class JwtTokenProviderTest {
     @Mock
     private SigningKeyProvider keyProvider;
 
@@ -33,7 +34,13 @@ class JwtTokenServiceTest {
     @Mock
     private TokenBlacklist tokenBlacklist;
 
-    private JwtTokenService jwtTokenService;
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private TokenBlacklist blacklist;
+
+    private JwtTokenProvider jwtTokenProvider;
     private Clock fixedClock;
     private Key testKey;
 
@@ -45,8 +52,9 @@ class JwtTokenServiceTest {
         testKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
         fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 
-        jwtTokenService = new JwtTokenService(
+        jwtTokenProvider = new JwtTokenProvider(
                 keyProvider,
+                userRepository,
                 jwtProperties,
                 tokenBlacklist,
                 fixedClock
@@ -59,7 +67,7 @@ class JwtTokenServiceTest {
         when(jwtProperties.getExpiration()).thenReturn(EXPIRATION_MS);
         when(keyProvider.getKey()).thenReturn(testKey);
 
-        String token = jwtTokenService.generateToken(TEST_USERNAME);
+        String token = jwtTokenProvider.generateToken(TEST_USERNAME);
 
         assertNotNull(token);
         Claims claims = parseToken(token);
@@ -78,7 +86,7 @@ class JwtTokenServiceTest {
         additionalClaims.put("role", "ADMIN");
         additionalClaims.put("email", "test@example.com");
 
-        String token = jwtTokenService.generateToken(TEST_USERNAME, additionalClaims);
+        String token = jwtTokenProvider.generateToken(TEST_USERNAME, additionalClaims);
 
         Claims claims = parseToken(token);
         assertEquals(TEST_USERNAME, claims.getSubject());
@@ -92,7 +100,7 @@ class JwtTokenServiceTest {
         when(jwtProperties.getExpiration()).thenReturn(EXPIRATION_MS);
         when(keyProvider.getKey()).thenReturn(testKey);
 
-        String token = jwtTokenService.generateToken(TEST_USERNAME, null);
+        String token = jwtTokenProvider.generateToken(TEST_USERNAME, null);
 
         Claims claims = parseToken(token);
         assertEquals(TEST_USERNAME, claims.getSubject());
@@ -102,17 +110,17 @@ class JwtTokenServiceTest {
     @Test
     void generateToken_WithNullUsername_ThrowsException() {
         assertThrows(IllegalArgumentException.class,
-                () -> jwtTokenService.generateToken(null));
+                () -> jwtTokenProvider.generateToken(null));
         assertThrows(IllegalArgumentException.class,
-                () -> jwtTokenService.generateToken(null, new HashMap<>()));
+                () -> jwtTokenProvider.generateToken(null, new HashMap<>()));
     }
 
     @Test
     void generateToken_WithEmptyUsername_ThrowsException() {
         assertThrows(IllegalArgumentException.class,
-                () -> jwtTokenService.generateToken(""));
+                () -> jwtTokenProvider.generateToken(""));
         assertThrows(IllegalArgumentException.class,
-                () -> jwtTokenService.generateToken("", new HashMap<>()));
+                () -> jwtTokenProvider.generateToken("", new HashMap<>()));
     }
 
     // ========== Claim Extraction Tests ==========
@@ -130,8 +138,8 @@ class JwtTokenServiceTest {
                 .signWith(testKey)
                 .compact();
 
-        assertEquals(123, jwtTokenService.extractClaim(token, "userId", Integer.class));
-        assertEquals(true, jwtTokenService.extractClaim(token, "active", Boolean.class));
+        assertEquals(123, jwtTokenProvider.extractClaim(token, "userId", Integer.class));
+        assertEquals(true, jwtTokenProvider.extractClaim(token, "active", Boolean.class));
     }
 
     @Test
@@ -144,20 +152,20 @@ class JwtTokenServiceTest {
                 .compact();
 
         assertThrows(IllegalArgumentException.class,
-                () -> jwtTokenService.extractClaim(token, "nonExistent", String.class));
+                () -> jwtTokenProvider.extractClaim(token, "nonExistent", String.class));
     }
 
     @Test
     void extractClaim_WithInvalidToken_ThrowsException() {
         when(keyProvider.getKey()).thenReturn(testKey);
         assertThrows(JwtException.class,
-                () -> jwtTokenService.extractClaim("invalid.token", "claim", String.class));
+                () -> jwtTokenProvider.extractClaim("invalid.token", "claim", String.class));
     }
 
     @Test
     void extractClaim_WithNullToken_ThrowsException() {
         assertThrows(IllegalArgumentException.class,
-                () -> jwtTokenService.extractClaim(null, "claim", String.class));
+                () -> jwtTokenProvider.extractClaim(null, "claim", String.class));
     }
 
     @Test
@@ -165,7 +173,7 @@ class JwtTokenServiceTest {
         String token = Jwts.builder().signWith(testKey).compact();
 
         assertThrows(IllegalArgumentException.class,
-                () -> jwtTokenService.extractClaim(token, null, String.class));
+                () -> jwtTokenProvider.extractClaim(token, null, String.class));
     }
 
     // ========== Username Extraction Tests ==========
@@ -178,18 +186,18 @@ class JwtTokenServiceTest {
                 .signWith(testKey)
                 .compact();
 
-        assertEquals(TEST_USERNAME, jwtTokenService.extractUsername(token));
+        assertEquals(TEST_USERNAME, jwtTokenProvider.extractUsername(token));
     }
 
     @Test
     void extractUsername_WithInvalidToken_ThrowsException() {
         when(keyProvider.getKey()).thenReturn(testKey);
-        assertThrows(JwtException.class, () -> jwtTokenService.extractUsername("invalid.token"));
+        assertThrows(JwtException.class, () -> jwtTokenProvider.extractUsername("invalid.token"));
     }
 
     @Test
     void extractUsername_WithNullToken_ThrowsException() {
-        assertThrows(IllegalArgumentException.class, () -> jwtTokenService.extractUsername(null));
+        assertThrows(IllegalArgumentException.class, () -> jwtTokenProvider.extractUsername(null));
     }
 
     // ========== Token Validation Tests ==========
@@ -200,9 +208,9 @@ class JwtTokenServiceTest {
         when(tokenBlacklist.isBlacklisted(anyString())).thenReturn(false);
 
         UserDetails userDetails = new User(TEST_USERNAME, "password", Collections.emptyList());
-        String validToken = jwtTokenService.generateToken(TEST_USERNAME);
+        String validToken = jwtTokenProvider.generateToken(TEST_USERNAME);
 
-        assertTrue(jwtTokenService.validateToken(validToken, userDetails));
+        assertTrue(jwtTokenProvider.validateToken(validToken, userDetails));
     }
 
     @Test
@@ -215,20 +223,20 @@ class JwtTokenServiceTest {
         claims.put("userId", 123);
 
         UserDetails userDetails = new User(TEST_USERNAME, "password", Collections.emptyList());
-        String token = jwtTokenService.generateToken(TEST_USERNAME, claims);
+        String token = jwtTokenProvider.generateToken(TEST_USERNAME, claims);
 
-        assertTrue(jwtTokenService.validateToken(token, userDetails));
+        assertTrue(jwtTokenProvider.validateToken(token, userDetails));
     }
 
     @Test
     void validateToken_WithBlacklistedToken_ReturnsFalse() {
         when(keyProvider.getKey()).thenReturn(testKey);
         UserDetails userDetails = new User(TEST_USERNAME, "password", Collections.emptyList());
-        String token = jwtTokenService.generateToken(TEST_USERNAME);
+        String token = jwtTokenProvider.generateToken(TEST_USERNAME);
 
         when(tokenBlacklist.isBlacklisted(token)).thenReturn(true);
 
-        assertFalse(jwtTokenService.validateToken(token, userDetails));
+        assertFalse(jwtTokenProvider.validateToken(token, userDetails));
     }
 
     @Test
@@ -245,7 +253,7 @@ class JwtTokenServiceTest {
 
         when(tokenBlacklist.isBlacklisted(expiredToken)).thenReturn(false);
 
-        boolean isValid = jwtTokenService.validateToken(expiredToken, userDetails);
+        boolean isValid = jwtTokenProvider.validateToken(expiredToken, userDetails);
 
         assertFalse(isValid);
     }
@@ -254,11 +262,11 @@ class JwtTokenServiceTest {
     void validateToken_WithWrongUser_ReturnsFalse() {
         when(keyProvider.getKey()).thenReturn(testKey);
         UserDetails wrongUser = new User("wronguser", "password", Collections.emptyList());
-        String validToken = jwtTokenService.generateToken(TEST_USERNAME);
+        String validToken = jwtTokenProvider.generateToken(TEST_USERNAME);
 
         when(tokenBlacklist.isBlacklisted(validToken)).thenReturn(false);
 
-        boolean isValid = jwtTokenService.validateToken(validToken, wrongUser);
+        boolean isValid = jwtTokenProvider.validateToken(validToken, wrongUser);
 
         assertFalse(isValid);
     }
@@ -267,7 +275,7 @@ class JwtTokenServiceTest {
     void validateToken_WithNullToken_ReturnsFalse() {
         UserDetails userDetails = new User(TEST_USERNAME, "password", Collections.emptyList());
 
-        boolean isValid = jwtTokenService.validateToken(null, userDetails);
+        boolean isValid = jwtTokenProvider.validateToken(null, userDetails);
 
         assertFalse(isValid);
     }
@@ -275,9 +283,9 @@ class JwtTokenServiceTest {
     @Test
     void validateToken_WithNullUserDetails_ReturnsFalse() {
         when(keyProvider.getKey()).thenReturn(testKey);
-        String validToken = jwtTokenService.generateToken(TEST_USERNAME);
+        String validToken = jwtTokenProvider.generateToken(TEST_USERNAME);
 
-        boolean isValid = jwtTokenService.validateToken(validToken, null);
+        boolean isValid = jwtTokenProvider.validateToken(validToken, null);
 
         assertFalse(isValid);
     }
@@ -287,9 +295,41 @@ class JwtTokenServiceTest {
         UserDetails userDetails = new User(TEST_USERNAME, "password", Collections.emptyList());
         String invalidToken = "invalid.token";
 
-        boolean isValid = jwtTokenService.validateToken(invalidToken, userDetails);
+        boolean isValid = jwtTokenProvider.validateToken(invalidToken, userDetails);
 
         assertFalse(isValid);
+    }
+
+    @Test
+    void validateToken_shouldReturnTrueForValidNonBlacklistedToken() {
+        when(jwtProperties.getExpiration()).thenReturn(EXPIRATION_MS);
+        when(keyProvider.getKey()).thenReturn(testKey);
+        String token = jwtTokenProvider.generateToken(TEST_USERNAME);
+
+        boolean isValid = jwtTokenProvider.validateToken(token);
+
+        assertTrue(isValid);
+    }
+
+
+    @Test
+    void validateToken_shouldReturnFalseIfTokenIsBlacklisted() {
+        when(keyProvider.getKey()).thenReturn(testKey);
+        String token = jwtTokenProvider.generateToken("blacklisted");
+
+        boolean isValid = jwtTokenProvider.validateToken(token);
+
+        assertFalse(isValid);
+    }
+
+    @Test
+    void validateToken_shouldReturnFalseForNullToken() {
+        assertFalse(jwtTokenProvider.validateToken(null));
+    }
+
+    @Test
+    void validateToken_shouldReturnFalseForMalformedToken() {
+        assertFalse(jwtTokenProvider.validateToken("malformed.token.value"));
     }
 
     // ========== Token Invalidation Tests ==========
@@ -305,7 +345,7 @@ class JwtTokenServiceTest {
                 .signWith(testKey)
                 .compact();
 
-        jwtTokenService.invalidateToken(token);
+        jwtTokenProvider.invalidateToken(token);
 
         // Allow for small differences in time (up to 1 second)
         verify(tokenBlacklist).blacklist(
@@ -316,12 +356,12 @@ class JwtTokenServiceTest {
 
     @Test
     void invalidateToken_WithNullToken_ThrowsException() {
-        assertThrows(IllegalArgumentException.class, () -> jwtTokenService.invalidateToken(null));
+        assertThrows(IllegalArgumentException.class, () -> jwtTokenProvider.invalidateToken(null));
     }
 
     @Test
     void invalidateToken_WithEmptyToken_ThrowsException() {
-        assertThrows(IllegalArgumentException.class, () -> jwtTokenService.invalidateToken(""));
+        assertThrows(IllegalArgumentException.class, () -> jwtTokenProvider.invalidateToken(""));
     }
 
     @Test
@@ -330,7 +370,7 @@ class JwtTokenServiceTest {
 
         String invalidToken = "invalid.token";
 
-        assertThrows(JwtException.class, () -> jwtTokenService.invalidateToken(invalidToken));
+        assertThrows(JwtException.class, () -> jwtTokenProvider.invalidateToken(invalidToken));
     }
 
     @Test
@@ -344,7 +384,7 @@ class JwtTokenServiceTest {
                 .signWith(testKey)
                 .compact();
 
-        assertThrows(ExpiredJwtException.class, () -> jwtTokenService.invalidateToken(expiredToken));
+        assertThrows(ExpiredJwtException.class, () -> jwtTokenProvider.invalidateToken(expiredToken));
     }
 
     // ========== Helper Methods ==========

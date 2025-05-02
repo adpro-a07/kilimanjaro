@@ -6,7 +6,7 @@ import id.ac.ui.cs.advprog.kilimanjaro.dto.*;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Customer;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Technician;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
-import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenService;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +33,7 @@ public class AuthServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private JwtTokenService jwtTokenService;
+    private JwtTokenProvider jwtTokenProvider;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -123,7 +123,7 @@ public class AuthServiceTest {
         when(userRepository.findByEmail("technician@example.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
         when(userRepository.save(any(Technician.class))).thenReturn(technician);
-        when(jwtTokenService.generateToken("technician@example.com")).thenReturn("jwt-token");
+        when(jwtTokenProvider.generateToken("technician@example.com")).thenReturn("jwt-token");
 
         GenericResponse<Void> response = authService.registerTechnician(registerTechnicianRequest);
 
@@ -152,7 +152,7 @@ public class AuthServiceTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
         when(authentication.getName()).thenReturn("customer@example.com");
-        when(jwtTokenService.generateToken(eq("customer@example.com"), anyMap())).thenReturn("jwt-token");
+        when(jwtTokenProvider.generateToken(eq("customer@example.com"), anyMap())).thenReturn("jwt-token");
         when(userRepository.findByEmail("customer@example.com")).thenReturn(Optional.of(customer));
 
         GenericResponse<LoginResponse> response = authService.login(loginRequest);
@@ -182,6 +182,6 @@ public class AuthServiceTest {
 
         authService.logout(token);
 
-        verify(jwtTokenService).invalidateToken(token);
+        verify(jwtTokenProvider).invalidateToken(token);
     }
 }
