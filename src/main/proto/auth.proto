@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "id.ac.ui.cs.advprog.kilimanjaro.auth";
+option java_outer_classname = "KilimanjaroAuthProto";
+option objc_class_prefix = "KA";
+
+package auth;
+
+import "google/protobuf/timestamp.proto";
+
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+message VerifyTokenResponse {
+  bool valid = 1;
+}
+
+message GetUserFromTokenRequest {
+  string token = 1;
+}
+
+enum UserRole {
+  ADMIN = 0;
+  TECHNICIAN = 1;
+  CUSTOMER = 2;
+}
+
+message UserIdentity {
+  string id = 1;
+  UserRole role = 2;
+  string email = 3;
+  string full_name = 4;
+  string phone_number = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message UserProfile {
+  string address = 1;
+  string work_experience = 2;
+  uint32 total_jobs_done = 3;
+  uint64 total_income = 4;
+}
+
+message UserData {
+  UserIdentity identity = 1;
+  UserProfile profile = 2;
+}
+
+message GetUserFromTokenResponse {
+  UserData user = 1;
+}
+
+message ValidateAndExtractRequest {
+  string token = 1;
+}
+
+message ValidateAndExtractResponse {
+  bool valid = 1;
+  UserData user = 3;
+}
+
+// --- AuthService definition ---
+
+service AuthService {
+  // Only checks if the token is valid
+  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+
+  // Gets user info from a token (assumes it's valid or includes error)
+  rpc GetUserFromToken(GetUserFromTokenRequest) returns (GetUserFromTokenResponse);
+
+  // Validates token and extracts user data in a single call
+  rpc ValidateAndExtract(ValidateAndExtractRequest) returns (ValidateAndExtractResponse);
+}
