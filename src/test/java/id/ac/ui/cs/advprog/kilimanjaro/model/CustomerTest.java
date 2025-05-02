@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.model;
 
+import id.ac.ui.cs.advprog.kilimanjaro.auth.UserProfile;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -92,5 +93,26 @@ class CustomerTest {
                 .build();
 
         assertEquals(customId, customer.getId());
+    }
+
+    @Test
+    void testGetProfileReturnsUserProfileInstance() {
+        UUID customId = UUID.randomUUID();
+        Customer customer = new Customer.CustomerBuilder()
+                .id(customId)
+                .fullName("Jane Doe")
+                .email("jane@example.com")
+                .phoneNumber("08987654321")
+                .password("anotherPassword")
+                .address("Jl. Sudirman No. 2")
+                .build();
+
+        UserProfile profile = customer.getProfile();
+
+        assertNotNull(profile, "UserProfile should not be null");
+        assertEquals(profile.getAddress(), customer.getAddress(), "Address should match");
+        assertEquals("", profile.getWorkExperience());
+        assertEquals(0, profile.getTotalIncome());
+        assertEquals(0, profile.getTotalJobsDone());
     }
 }
