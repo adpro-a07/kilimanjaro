@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.model;
 
+import id.ac.ui.cs.advprog.kilimanjaro.auth.UserProfile;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -21,6 +22,13 @@ public class Customer extends BaseUser {
 
     protected Customer() {
         super(); // Required by JPA
+    }
+
+    @Override
+    public UserProfile getProfile() {
+        return UserProfile.newBuilder()
+                .setAddress(this.address)
+                .build();
     }
 
     public static class CustomerBuilder extends BaseUserBuilder<CustomerBuilder> {

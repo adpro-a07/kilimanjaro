@@ -1,15 +1,19 @@
 package id.ac.ui.cs.advprog.kilimanjaro.model;
 
+import id.ac.ui.cs.advprog.kilimanjaro.auth.UserProfile;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.persistence.Table;
 
 @Entity
 @DiscriminatorValue("ADMIN")
 public class Admin extends BaseUser {
     protected Admin() {
         super(); // Required by JPA for reflection
+    }
+
+    @Override
+    public UserProfile getProfile() {
+        return UserProfile.newBuilder().build();
     }
 
     private Admin(AdminBuilder builder) {

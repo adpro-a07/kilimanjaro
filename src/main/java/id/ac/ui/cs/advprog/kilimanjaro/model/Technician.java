@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.model;
 
+import id.ac.ui.cs.advprog.kilimanjaro.auth.UserProfile;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -38,6 +39,16 @@ public class Technician extends BaseUser {
 
     protected Technician() {
         super();
+    }
+
+    @Override
+    public UserProfile getProfile() {
+        return UserProfile.newBuilder()
+                .setAddress(this.address)
+                .setWorkExperience(this.experience)
+                .setTotalJobsDone(this.totalJobsDone)
+                .setTotalIncome(this.totalIncome)
+                .build();
     }
 
     private Technician(TechnicianBuilder builder) {
