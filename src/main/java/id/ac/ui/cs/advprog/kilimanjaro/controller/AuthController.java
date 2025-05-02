@@ -2,7 +2,8 @@ package id.ac.ui.cs.advprog.kilimanjaro.controller;
 
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.AuthResponse;
+import id.ac.ui.cs.advprog.kilimanjaro.dto.GenericResponse;
+import id.ac.ui.cs.advprog.kilimanjaro.dto.LoginResponse;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.LoginRequest;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.RegisterCustomerRequest;
 import id.ac.ui.cs.advprog.kilimanjaro.service.AuthService;
@@ -24,8 +25,8 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> registerCustomer(@Valid @RequestBody RegisterCustomerRequest registerRequest) {
         try {
-            AuthResponse authResponse = authService.registerCustomer(registerRequest);
-            return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
+            GenericResponse<Void> response = authService.registerCustomer(registerRequest);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (UserAlreadyExistsException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -34,8 +35,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
-            AuthResponse authResponse = authService.login(loginRequest);
-            return new ResponseEntity<>(authResponse, HttpStatus.OK);
+            GenericResponse<LoginResponse> response = authService.login(loginRequest);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InvalidCredentialsException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED);
         }

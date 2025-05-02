@@ -3,10 +3,7 @@ package id.ac.ui.cs.advprog.kilimanjaro.service;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenService;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.AuthResponse;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.LoginRequest;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.RegisterCustomerRequest;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.RegisterTechnicianRequest;
+import id.ac.ui.cs.advprog.kilimanjaro.dto.*;
 import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Customer;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Technician;
@@ -39,7 +36,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse registerCustomer(RegisterCustomerRequest registerRequest) {
+    public GenericResponse<Void> registerCustomer(RegisterCustomerRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             throw new UserAlreadyExistsException("Email is already in use");
         }
@@ -54,11 +51,15 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(newCustomer);
 
-        return new AuthResponse(null, newCustomer.getEmail());
+        return new GenericResponse<>(
+                true,
+                "Registration successful",
+                null
+        );
     }
 
     @Override
-    public AuthResponse registerTechnician(RegisterTechnicianRequest registerRequest) {
+    public GenericResponse<Void> registerTechnician(RegisterTechnicianRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             throw new UserAlreadyExistsException("Email is already in use");
         }
@@ -76,11 +77,15 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtTokenService.generateToken(newTechnician.getEmail());
 
-        return new AuthResponse(token, newTechnician.getEmail());
+        return new GenericResponse<>(
+                true,
+                "Registration successful",
+                null
+        );
     }
 
     @Override
-    public AuthResponse login(LoginRequest loginRequest) {
+    public GenericResponse<LoginResponse> login(LoginRequest loginRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -99,7 +104,11 @@ public class AuthServiceImpl implements AuthService {
             claims.put("id", user.getId());
             String token = jwtTokenService.generateToken(username, claims);
 
-            return new AuthResponse(token, username);
+            return new GenericResponse<>(
+                    true,
+                    "Login successful",
+                    new LoginResponse(token, username)
+            );
         } catch (AuthenticationException e) {
             throw new InvalidCredentialsException("Invalid username or password");
         }
