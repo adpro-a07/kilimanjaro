@@ -123,7 +123,6 @@ public class AuthServiceTest {
         when(userRepository.findByEmail("technician@example.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
         when(userRepository.save(any(Technician.class))).thenReturn(technician);
-        when(jwtTokenProvider.generateToken("technician@example.com")).thenReturn("jwt-token");
 
         GenericResponse<Void> response = authService.registerTechnician(registerTechnicianRequest);
 
