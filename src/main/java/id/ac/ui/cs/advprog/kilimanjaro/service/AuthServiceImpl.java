@@ -75,8 +75,6 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(newTechnician);
 
-        String token = jwtTokenProvider.generateToken(newTechnician.getEmail());
-
         return new GenericResponse<>(
                 true,
                 "Registration successful",

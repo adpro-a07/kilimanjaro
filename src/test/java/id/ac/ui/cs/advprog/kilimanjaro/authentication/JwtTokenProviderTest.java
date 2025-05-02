@@ -37,9 +37,6 @@ class JwtTokenProviderTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private TokenBlacklist blacklist;
-
     private JwtTokenProvider jwtTokenProvider;
     private Clock fixedClock;
     private Key testKey;
