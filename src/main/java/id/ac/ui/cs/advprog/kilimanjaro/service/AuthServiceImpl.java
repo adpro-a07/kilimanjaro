@@ -1,6 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.service;
 
-import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenService;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenProvider;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.*;
@@ -22,16 +22,16 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenService jwtTokenService;
+    private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
-                           JwtTokenService jwtTokenService,
+                           JwtTokenProvider jwtTokenProvider,
                            AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtTokenService = jwtTokenService;
+        this.jwtTokenProvider = jwtTokenProvider;
         this.authenticationManager = authenticationManager;
     }
 
@@ -75,7 +75,7 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(newTechnician);
 
-        String token = jwtTokenService.generateToken(newTechnician.getEmail());
+        String token = jwtTokenProvider.generateToken(newTechnician.getEmail());
 
         return new GenericResponse<>(
                 true,
@@ -102,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
             claims.put("role", user.getRole());
             claims.put("fullName", user.getFullName());
             claims.put("id", user.getId());
-            String token = jwtTokenService.generateToken(username, claims);
+            String token = jwtTokenProvider.generateToken(username, claims);
 
             return new GenericResponse<>(
                     true,
@@ -121,6 +121,6 @@ public class AuthServiceImpl implements AuthService {
             token = token.substring(7);
         }
 
-        jwtTokenService.invalidateToken(token);
+        jwtTokenProvider.invalidateToken(token);
     }
 }

@@ -1,6 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication.config;
 
-import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenService;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,11 +20,11 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtTokenService jwtTokenService;
+    private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtTokenService jwtTokenService, UserDetailsService userDetailsService) {
-        this.jwtTokenService = jwtTokenService;
+    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserDetailsService userDetailsService) {
+        this.jwtTokenProvider = jwtTokenProvider;
         this.userDetailsService = userDetailsService;
     }
 
@@ -35,12 +35,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = parseJwt(request);
             if (jwt != null) {
-                String username = jwtTokenService.extractUsername(jwt);
+                String username = jwtTokenProvider.extractUsername(jwt);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                    if (jwtTokenService.validateToken(jwt, userDetails)) {
+                    if (jwtTokenProvider.validateToken(jwt, userDetails)) {
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(userDetails, null,
                                         userDetails.getAuthorities());

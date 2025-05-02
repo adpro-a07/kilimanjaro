@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication;
 
+import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
+import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -12,25 +14,25 @@ import org.springframework.util.Assert;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Component
-public class JwtTokenService {
-    private static final Logger logger = LoggerFactory.getLogger(JwtTokenService.class);
+public class JwtTokenProvider {
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
     private final SigningKeyProvider keyProvider;
+    private final UserRepository userRepository;
     private final JwtProperties properties;
     private final TokenBlacklist blacklist;
     private final Clock clock;
 
-    public JwtTokenService(SigningKeyProvider keyProvider,
-                           JwtProperties properties,
-                           TokenBlacklist blacklist,
-                           Clock clock) {
+    public JwtTokenProvider(SigningKeyProvider keyProvider,
+                            UserRepository userRepository,
+                            JwtProperties properties,
+                            TokenBlacklist blacklist,
+                            Clock clock) {
         this.keyProvider = Objects.requireNonNull(keyProvider, "SigningKeyProvider must not be null");
+        this.userRepository = Objects.requireNonNull(userRepository, "UserRepository must not be null");
         this.properties = Objects.requireNonNull(properties, "JwtProperties must not be null");
         this.blacklist = Objects.requireNonNull(blacklist, "TokenBlacklist must not be null");
         this.clock = Objects.requireNonNull(clock, "Clock must not be null");
@@ -90,6 +92,18 @@ public class JwtTokenService {
             throw e;
         }
     }
+
+    public boolean validateToken(String token) {
+        if (token == null) return false;
+        try {
+            if (blacklist.isBlacklisted(token)) return false;
+            Instant expiration = extractAllClaims(token).getExpiration().toInstant();
+            return expiration.isAfter(clock.instant());
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
 
     /**
      * Validates a token against user details
@@ -155,6 +169,25 @@ public class JwtTokenService {
             throw e;
         }
     }
+
+    public BaseUser getUserFromToken(String token) {
+        Assert.hasText(token, "Token must not be null or empty");
+
+        try {
+            String email = extractUsername(token);
+            Optional<BaseUser> userOpt = userRepository.findByEmail(email);
+
+            if (userOpt.isEmpty()) {
+                throw new IllegalArgumentException("User not found for token subject");
+            }
+
+            return userOpt.get();
+        } catch (JwtException e) {
+            logger.warn("JWT error during user data extraction", e);
+            return null;
+        }
+    }
+
 
     /**
      * Extracts a specific claim from the token
