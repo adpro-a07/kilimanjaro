@@ -1,6 +1,8 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication.config;
 
 import id.ac.ui.cs.advprog.kilimanjaro.service.UserDetailsServiceImpl;
+import net.devh.boot.grpc.server.security.authentication.BasicGrpcAuthenticationReader;
+import net.devh.boot.grpc.server.security.authentication.GrpcAuthenticationReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -62,5 +64,10 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public GrpcAuthenticationReader grpcAuthenticationReader(){
+        return new BasicGrpcAuthenticationReader();
     }
 }
