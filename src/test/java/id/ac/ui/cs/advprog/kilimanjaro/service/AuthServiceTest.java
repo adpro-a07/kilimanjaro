@@ -2,10 +2,7 @@ package id.ac.ui.cs.advprog.kilimanjaro.service;
 
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.AuthResponse;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.LoginRequest;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.RegisterCustomerRequest;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.RegisterTechnicianRequest;
+import id.ac.ui.cs.advprog.kilimanjaro.dto.*;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Customer;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Technician;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
@@ -99,12 +96,12 @@ public class AuthServiceTest {
         when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
         when(userRepository.save(any(Customer.class))).thenReturn(customer);
 
-        AuthResponse response = authService.registerCustomer(registerCustomerRequest);
+        GenericResponse<Void> response = authService.registerCustomer(registerCustomerRequest);
 
         // Assert
         assertNotNull(response);
-        assertNull(response.getToken());
-        assertEquals("customer@example.com", response.getEmail());
+        assertEquals("Registration successful", response.getMessage());
+        assertTrue(response.isSuccess());
         verify(userRepository).save(any(Customer.class));
     }
 
@@ -128,12 +125,12 @@ public class AuthServiceTest {
         when(userRepository.save(any(Technician.class))).thenReturn(technician);
         when(jwtTokenService.generateToken("technician@example.com")).thenReturn("jwt-token");
 
-        AuthResponse response = authService.registerTechnician(registerTechnicianRequest);
+        GenericResponse<Void> response = authService.registerTechnician(registerTechnicianRequest);
 
         // Assert
         assertNotNull(response);
-        assertEquals("jwt-token", response.getToken());
-        assertEquals("technician@example.com", response.getEmail());
+        assertEquals("Registration successful", response.getMessage());
+        assertTrue(response.isSuccess());
         verify(userRepository).save(any(Technician.class));
     }
 
@@ -158,12 +155,12 @@ public class AuthServiceTest {
         when(jwtTokenService.generateToken(eq("customer@example.com"), anyMap())).thenReturn("jwt-token");
         when(userRepository.findByEmail("customer@example.com")).thenReturn(Optional.of(customer));
 
-        AuthResponse response = authService.login(loginRequest);
+        GenericResponse<LoginResponse> response = authService.login(loginRequest);
 
         // Assert
         assertNotNull(response);
-        assertEquals("jwt-token", response.getToken());
-        assertEquals("customer@example.com", response.getEmail());
+        assertEquals("jwt-token", response.getData().getToken());
+        assertEquals("customer@example.com", response.getData().getEmail());
     }
 
     @Test

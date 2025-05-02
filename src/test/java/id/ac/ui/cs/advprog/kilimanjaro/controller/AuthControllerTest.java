@@ -2,7 +2,8 @@ package id.ac.ui.cs.advprog.kilimanjaro.controller;
 
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.AuthResponse;
+import id.ac.ui.cs.advprog.kilimanjaro.dto.GenericResponse;
+import id.ac.ui.cs.advprog.kilimanjaro.dto.LoginResponse;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.LoginRequest;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.RegisterCustomerRequest;
 import id.ac.ui.cs.advprog.kilimanjaro.service.AuthService;
@@ -29,7 +30,8 @@ class AuthControllerTest {
 
     private RegisterCustomerRequest validRegisterRequest;
     private LoginRequest validLoginRequest;
-    private AuthResponse successAuthResponse;
+    private GenericResponse<LoginResponse> successLoginResponse;
+    private GenericResponse<Void> successRegistrationResponse;
 
     @BeforeEach
     void setUp() {
@@ -44,17 +46,27 @@ class AuthControllerTest {
         validLoginRequest.setEmail("john@example.com");
         validLoginRequest.setPassword("securePassword123");
 
-        successAuthResponse = new AuthResponse("jwt.token.here", "john@example.com");
+        successLoginResponse = new GenericResponse<>(
+                true,
+                "Login successful",
+                new LoginResponse("jwt.token.here", "Bearer")
+        );
+
+        successRegistrationResponse = new GenericResponse<>(
+                true,
+                "Registration successful",
+                null
+        );
     }
 
     @Test
     void registerCustomer_WithValidRequest_ReturnsCreated() throws UserAlreadyExistsException {
-        when(authService.registerCustomer(validRegisterRequest)).thenReturn(successAuthResponse);
+        when(authService.registerCustomer(validRegisterRequest)).thenReturn(successRegistrationResponse);
 
         ResponseEntity<?> response = authController.registerCustomer(validRegisterRequest);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(successAuthResponse, response.getBody());
+        assertEquals(successRegistrationResponse, response.getBody());
         verify(authService, times(1)).registerCustomer(validRegisterRequest);
     }
 
@@ -72,12 +84,12 @@ class AuthControllerTest {
 
     @Test
     void loginUser_WithValidCredentials_ReturnsOk() throws InvalidCredentialsException {
-        when(authService.login(validLoginRequest)).thenReturn(successAuthResponse);
+        when(authService.login(validLoginRequest)).thenReturn(successLoginResponse);
 
         ResponseEntity<?> response = authController.loginUser(validLoginRequest);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(successAuthResponse, response.getBody());
+        assertEquals(successLoginResponse, response.getBody());
         verify(authService, times(1)).login(validLoginRequest);
     }
 
