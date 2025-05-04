@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication;
 
+import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -15,10 +16,7 @@ import java.security.Key;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -382,6 +380,167 @@ class JwtTokenProviderTest {
                 .compact();
 
         assertThrows(ExpiredJwtException.class, () -> jwtTokenProvider.invalidateToken(expiredToken));
+    }
+
+    // ========== getUserFromToken Tests ==========
+    @Test
+    void getUserFromToken_WithValidToken_ReturnsUser() {
+        // Prepare test data
+        when(keyProvider.getKey()).thenReturn(testKey);
+        when(tokenBlacklist.isBlacklisted(anyString())).thenReturn(false);
+
+        BaseUser mockUser = mock(BaseUser.class);
+        when(userRepository.findByEmail(TEST_USERNAME)).thenReturn(Optional.of(mockUser));
+
+        // Create valid token
+        String token = Jwts.builder()
+                .setSubject(TEST_USERNAME)
+                .setIssuedAt(Date.from(Instant.now(fixedClock)))
+                .setExpiration(Date.from(Instant.now(fixedClock).plusMillis(EXPIRATION_MS)))
+                .signWith(testKey)
+                .compact();
+
+        // Execute test
+        BaseUser result = jwtTokenProvider.getUserFromToken(token);
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(mockUser, result);
+        verify(userRepository).findByEmail(TEST_USERNAME);
+    }
+
+    @Test
+    void getUserFromToken_WithBlacklistedToken_ReturnsNull() {
+        String token = Jwts.builder()
+                .setSubject(TEST_USERNAME)
+                .setIssuedAt(Date.from(Instant.now(fixedClock)))
+                .setExpiration(Date.from(Instant.now(fixedClock).plusMillis(EXPIRATION_MS)))
+                .signWith(testKey)
+                .compact();
+
+        when(tokenBlacklist.isBlacklisted(token)).thenReturn(true);
+
+        // Execute
+        BaseUser result = jwtTokenProvider.getUserFromToken(token);
+
+        // Verify
+        assertNull(result);
+        verify(tokenBlacklist).isBlacklisted(token);
+        verify(userRepository, never()).findByEmail(anyString());
+    }
+
+    @Test
+    void getUserFromToken_WithExpiredToken_ReturnsNull() {
+        // Prepare
+        when(keyProvider.getKey()).thenReturn(testKey);
+        when(tokenBlacklist.isBlacklisted(anyString())).thenReturn(false);
+
+        String expiredToken = Jwts.builder()
+                .setSubject(TEST_USERNAME)
+                .setIssuedAt(Date.from(Instant.now(fixedClock).minusSeconds(7200)))
+                .setExpiration(Date.from(Instant.now(fixedClock).minusSeconds(3600))) // expired 1 hour ago
+                .signWith(testKey)
+                .compact();
+
+        // Execute
+        BaseUser result = jwtTokenProvider.getUserFromToken(expiredToken);
+
+        // Verify
+        assertNull(result);
+        verify(userRepository, never()).findByEmail(anyString());
+    }
+
+    @Test
+    void getUserFromToken_WithNonExistentUser_ReturnsNull() {
+        // Prepare
+        when(keyProvider.getKey()).thenReturn(testKey);
+        when(tokenBlacklist.isBlacklisted(anyString())).thenReturn(false);
+        when(userRepository.findByEmail(TEST_USERNAME)).thenReturn(Optional.empty());
+
+        String token = Jwts.builder()
+                .setSubject(TEST_USERNAME)
+                .setIssuedAt(Date.from(Instant.now(fixedClock)))
+                .setExpiration(Date.from(Instant.now(fixedClock).plusMillis(EXPIRATION_MS)))
+                .signWith(testKey)
+                .compact();
+
+        // Execute
+        BaseUser result = jwtTokenProvider.getUserFromToken(token);
+
+        // Verify
+        assertNull(result);
+        verify(userRepository).findByEmail(TEST_USERNAME);
+    }
+
+    @Test
+    void getUserFromToken_WithInvalidToken_ReturnsNull() {
+        when(keyProvider.getKey()).thenReturn(testKey);
+
+        BaseUser result = jwtTokenProvider.getUserFromToken("invalid.token");
+
+        assertNull(result);
+        verify(userRepository, never()).findByEmail(anyString());
+    }
+
+    @Test
+    void getUserFromToken_WithNullToken_ThrowsException() {
+        assertThrows(IllegalArgumentException.class, () -> jwtTokenProvider.getUserFromToken(null));
+    }
+
+    // ========== hasText Method Logic Tests ==========
+    @Test
+    void validateToken_WithEmptyToken_ReturnsFalse() {
+        assertFalse(jwtTokenProvider.validateToken(""));
+    }
+
+    @Test
+    void validateToken_WithUserDetails_EmptyToken_ReturnsFalse() {
+        org.springframework.security.core.userdetails.User userDetails =
+                new org.springframework.security.core.userdetails.User(
+                        TEST_USERNAME, "password", java.util.Collections.emptyList());
+
+        assertFalse(jwtTokenProvider.validateToken("", userDetails));
+    }
+
+    @Test
+    void validateToken_WithSpacesOnlyToken_ReturnsFalse() {
+        assertFalse(jwtTokenProvider.validateToken("   "));
+    }
+
+    // ========== Objects.requireNonNull Constructor Tests ==========
+    @Test
+    void constructor_WithNullKeyProvider_ThrowsException() {
+        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+                null, userRepository, jwtProperties, tokenBlacklist, fixedClock
+        ));
+    }
+
+    @Test
+    void constructor_WithNullUserRepository_ThrowsException() {
+        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+                keyProvider, null, jwtProperties, tokenBlacklist, fixedClock
+        ));
+    }
+
+    @Test
+    void constructor_WithNullJwtProperties_ThrowsException() {
+        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+                keyProvider, userRepository, null, tokenBlacklist, fixedClock
+        ));
+    }
+
+    @Test
+    void constructor_WithNullTokenBlacklist_ThrowsException() {
+        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+                keyProvider, userRepository, jwtProperties, null, fixedClock
+        ));
+    }
+
+    @Test
+    void constructor_WithNullClock_ThrowsException() {
+        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+                keyProvider, userRepository, jwtProperties, tokenBlacklist, null
+        ));
     }
 
     // ========== Helper Methods ==========
