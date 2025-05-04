@@ -2,10 +2,7 @@ package id.ac.ui.cs.advprog.kilimanjaro.authentication;
 
 import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,32 +28,17 @@ public class JwtTokenProvider {
                             JwtProperties properties,
                             TokenBlacklist blacklist,
                             Clock clock) {
-        this.keyProvider = Objects.requireNonNull(keyProvider, "SigningKeyProvider must not be null");
-        this.userRepository = Objects.requireNonNull(userRepository, "UserRepository must not be null");
-        this.properties = Objects.requireNonNull(properties, "JwtProperties must not be null");
-        this.blacklist = Objects.requireNonNull(blacklist, "TokenBlacklist must not be null");
-        this.clock = Objects.requireNonNull(clock, "Clock must not be null");
+        this.keyProvider = Objects.requireNonNull(keyProvider);
+        this.userRepository = Objects.requireNonNull(userRepository);
+        this.properties = Objects.requireNonNull(properties);
+        this.blacklist = Objects.requireNonNull(blacklist);
+        this.clock = Objects.requireNonNull(clock);
     }
 
-    /**
-     * Generates a JWT token for the given username (without additional claims)
-     *
-     * @param username the username to include in the token
-     * @return the generated JWT token
-     * @throws IllegalArgumentException if username is null or empty
-     */
     public String generateToken(String username) {
         return generateToken(username, new HashMap<>());
     }
 
-    /**
-     * Generates a JWT token for the given username with additional claims
-     *
-     * @param username the username to include in the token
-     * @param additionalClaims a map of additional claims to include in the token
-     * @return the generated JWT token
-     * @throws IllegalArgumentException if username is null or empty
-     */
     public String generateToken(String username, Map<String, Object> additionalClaims) {
         Assert.hasText(username, "Username must not be null or empty");
 
@@ -69,19 +51,11 @@ public class JwtTokenProvider {
                 .setSubject(username)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(expiry))
-                .addClaims(additionalClaims) // Add additional claims here
+                .addClaims(additionalClaims)
                 .signWith(keyProvider.getKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    /**
-     * Extracts the username from a token
-     *
-     * @param token the JWT token
-     * @return the username
-     * @throws JwtException if the token is invalid or expired
-     * @throws IllegalArgumentException if token is null or empty
-     */
     public String extractUsername(String token) {
         Assert.hasText(token, "Token must not be null or empty");
 
@@ -94,33 +68,31 @@ public class JwtTokenProvider {
     }
 
     public boolean validateToken(String token) {
-        if (token == null) return false;
+        if (hasText(token)) return false;
+
         try {
-            if (blacklist.isBlacklisted(token)) return false;
+            if (blacklist.isBlacklisted(token)) {
+                logger.info("Token is blacklisted");
+                return false;
+            }
+
             Instant expiration = extractAllClaims(token).getExpiration().toInstant();
             return expiration.isAfter(clock.instant());
         } catch (JwtException | IllegalArgumentException e) {
+            logger.warn("Token validation failed", e);
             return false;
         }
     }
 
-
-    /**
-     * Validates a token against user details
-     *
-     * @param token the JWT token
-     * @param userDetails the user details to validate against
-     * @return true if the token is valid, false otherwise
-     */
     public boolean validateToken(String token, UserDetails userDetails) {
-        if (token == null || userDetails == null) {
+        if (hasText(token) || userDetails == null) {
             logger.warn("Token or UserDetails is null during validation");
             return false;
         }
 
         try {
             if (blacklist.isBlacklisted(token)) {
-                logger.info("Token validation failed: token is blacklisted");
+                logger.info("Token is blacklisted");
                 return false;
             }
 
@@ -128,42 +100,28 @@ public class JwtTokenProvider {
             String username = claims.getSubject();
             Instant expiration = claims.getExpiration().toInstant();
 
-            boolean isValid = username.equals(userDetails.getUsername()) &&
+            boolean valid = username.equals(userDetails.getUsername()) &&
                     expiration.isAfter(clock.instant());
 
-            if (!isValid) {
-                if (!username.equals(userDetails.getUsername())) {
-                    logger.info("Token validation failed: username mismatch");
-                } else {
-                    logger.info("Token validation failed: token expired");
-                }
+            if (!valid) {
+                logger.info("Token validation failed: {}",
+                        !username.equals(userDetails.getUsername()) ? "username mismatch" : "token expired");
             }
 
-            return isValid;
-        } catch (JwtException e) {
-            logger.warn("Token validation failed due to JWT exception", e);
-            return false;
-        } catch (IllegalArgumentException e) {
-            logger.warn("Token validation failed due to invalid argument", e);
+            return valid;
+        } catch (JwtException | IllegalArgumentException e) {
+            logger.warn("Token validation failed", e);
             return false;
         }
     }
 
-    /**
-     * Invalidates a token by adding it to the blacklist
-     *
-     * @param token the JWT token to invalidate
-     * @throws JwtException if the token is invalid
-     * @throws IllegalArgumentException if token is null or empty
-     */
     public void invalidateToken(String token) {
         Assert.hasText(token, "Token must not be null or empty");
 
         try {
-            Claims claims = extractAllClaims(token);
-            Instant expiry = claims.getExpiration().toInstant();
+            Instant expiry = extractAllClaims(token).getExpiration().toInstant();
             blacklist.blacklist(token, expiry.toEpochMilli());
-            logger.debug("Token invalidated and added to blacklist");
+            logger.debug("Token invalidated and blacklisted");
         } catch (JwtException e) {
             logger.warn("Failed to invalidate token", e);
             throw e;
@@ -174,38 +132,34 @@ public class JwtTokenProvider {
         Assert.hasText(token, "Token must not be null or empty");
 
         try {
-            String email = extractUsername(token);
-            Optional<BaseUser> userOpt = userRepository.findByEmail(email);
-
-            if (userOpt.isEmpty()) {
-                throw new IllegalArgumentException("User not found for token subject");
+            if (blacklist.isBlacklisted(token)) {
+                logger.warn("Attempt to retrieve user from blacklisted token");
+                return null;
             }
 
-            return userOpt.get();
-        } catch (JwtException e) {
-            logger.warn("JWT error during user data extraction", e);
+            Claims claims = extractAllClaims(token);
+            if (claims.getExpiration().toInstant().isBefore(clock.instant())) {
+                logger.warn("Attempt to retrieve user from expired token");
+                return null;
+            }
+
+            String email = claims.getSubject();
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found for token subject"));
+        } catch (JwtException | IllegalArgumentException e) {
+            logger.warn("Error extracting user from token", e);
             return null;
         }
     }
 
-
-    /**
-     * Extracts a specific claim from the token
-     *
-     * @param token the JWT token
-     * @param claimName the name of the claim to extract
-     * @return the claim value
-     * @throws JwtException if the token is invalid or expired
-     * @throws IllegalArgumentException if token is null or empty
-     */
     public <T> T extractClaim(String token, String claimName, Class<T> claimType) {
         Assert.hasText(token, "Token must not be null or empty");
         Assert.hasText(claimName, "Claim name must not be null or empty");
 
         try {
             Claims claims = extractAllClaims(token);
-            Object claimValue = claims.get(claimName);
-            if (claimValue == null) {
+            Object value = claims.get(claimName);
+            if (value == null) {
                 throw new IllegalArgumentException("Claim '" + claimName + "' not found in token");
             }
             return claims.get(claimName, claimType);
@@ -215,18 +169,15 @@ public class JwtTokenProvider {
         }
     }
 
-    /**
-     * Extracts all claims from a token
-     *
-     * @param token the JWT token
-     * @return the claims
-     * @throws JwtException if the token is invalid
-     */
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(keyProvider.getKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    private boolean hasText(String str) {
+        return str == null || str.trim().isEmpty();
     }
 }

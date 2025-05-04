@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.kilimanjaro.authentication.config;
+package id.ac.ui.cs.advprog.kilimanjaro.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

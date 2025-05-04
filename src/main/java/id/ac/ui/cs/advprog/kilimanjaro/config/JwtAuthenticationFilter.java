@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.kilimanjaro.authentication.config;
+package id.ac.ui.cs.advprog.kilimanjaro.config;
 
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
