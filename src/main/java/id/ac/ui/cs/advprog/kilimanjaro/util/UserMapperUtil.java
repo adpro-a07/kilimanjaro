@@ -4,7 +4,6 @@ import com.google.protobuf.Timestamp;
 import id.ac.ui.cs.advprog.kilimanjaro.auth.grpc.UserIdentity;
 import id.ac.ui.cs.advprog.kilimanjaro.auth.grpc.UserRole;
 import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
-import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

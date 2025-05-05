@@ -8,14 +8,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface UserRepository extends JpaRepository<BaseUser, Long> {
-    Optional<BaseUser> findByFullName(@NotBlank @Size(max = 100) String fullName);
-
     Optional<BaseUser> findByEmail(@NotBlank @Email @Size(max = 100) String email);
 
-    Boolean existsByFullName(@NotBlank @Size(max = 100) String fullName);
+    Optional<BaseUser> findById(@NotBlank @Size(max = 100) UUID id);
 
     Boolean existsByEmail(@NotBlank @Email @Size(max = 100) String email);
+
+    Boolean existsById(@NotBlank @Size(max = 100) UUID id);
 }
