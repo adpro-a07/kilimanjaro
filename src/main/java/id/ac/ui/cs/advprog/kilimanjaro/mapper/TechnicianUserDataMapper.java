@@ -1,7 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.mapper;
 
 import id.ac.ui.cs.advprog.kilimanjaro.auth.grpc.UserProfile;
-import id.ac.ui.cs.advprog.kilimanjaro.model.Customer;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Technician;
 import id.ac.ui.cs.advprog.kilimanjaro.model.enums.UserRole;
 import org.springframework.stereotype.Component;
