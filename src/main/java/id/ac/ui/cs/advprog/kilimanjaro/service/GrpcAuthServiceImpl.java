@@ -11,10 +11,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 
 @GrpcService
-public class JwtService extends AuthServiceGrpc.AuthServiceImplBase {
+public class GrpcAuthServiceImpl extends AuthServiceGrpc.AuthServiceImplBase {
     private final JwtTokenProvider jwtTokenProvider;
 
-    public JwtService(JwtTokenProvider jwtTokenProvider) {
+    public GrpcAuthServiceImpl(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 

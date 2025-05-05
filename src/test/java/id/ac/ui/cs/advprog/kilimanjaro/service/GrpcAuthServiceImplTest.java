@@ -5,7 +5,6 @@ import id.ac.ui.cs.advprog.kilimanjaro.auth.*;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenProvider;
 import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Customer;
-import id.ac.ui.cs.advprog.kilimanjaro.model.enums.UserRole;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class JwtServiceTest {
+public class GrpcAuthServiceImplTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
@@ -35,13 +34,13 @@ public class JwtServiceTest {
     @Mock
     private StreamObserver<ValidateAndExtractResponse> validateResponseObserver;
 
-    private JwtService jwtService;
+    private GrpcAuthServiceImpl grpcAuthServiceImpl;
     private String mockToken;
     private BaseUser mockBaseUser;
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService(jwtTokenProvider);
+        grpcAuthServiceImpl = new GrpcAuthServiceImpl(jwtTokenProvider);
         mockToken = "valid.mock.token";
         mockBaseUser = createMockCustomer();
     }
@@ -72,7 +71,7 @@ public class JwtServiceTest {
         when(jwtTokenProvider.validateToken(mockToken)).thenReturn(true);
 
         // Act
-        jwtService.verifyToken(request, verifyResponseObserver);
+        grpcAuthServiceImpl.verifyToken(request, verifyResponseObserver);
 
         // Assert
         ArgumentCaptor<VerifyTokenResponse> responseCaptor = ArgumentCaptor.forClass(VerifyTokenResponse.class);
@@ -92,7 +91,7 @@ public class JwtServiceTest {
         when(jwtTokenProvider.validateToken(mockToken)).thenReturn(false);
 
         // Act
-        jwtService.verifyToken(request, verifyResponseObserver);
+        grpcAuthServiceImpl.verifyToken(request, verifyResponseObserver);
 
         // Assert
         ArgumentCaptor<VerifyTokenResponse> responseCaptor = ArgumentCaptor.forClass(VerifyTokenResponse.class);
@@ -112,7 +111,7 @@ public class JwtServiceTest {
         when(jwtTokenProvider.validateToken(mockToken)).thenThrow(new RuntimeException("Token validation failed"));
 
         // Act
-        jwtService.verifyToken(request, verifyResponseObserver);
+        grpcAuthServiceImpl.verifyToken(request, verifyResponseObserver);
 
         // Assert
         ArgumentCaptor<VerifyTokenResponse> responseCaptor = ArgumentCaptor.forClass(VerifyTokenResponse.class);
@@ -132,7 +131,7 @@ public class JwtServiceTest {
         when(jwtTokenProvider.getUserFromToken(mockToken)).thenReturn(mockBaseUser);
 
         // Act
-        jwtService.getUserFromToken(request, getUserResponseObserver);
+        grpcAuthServiceImpl.getUserFromToken(request, getUserResponseObserver);
 
         // Assert
         ArgumentCaptor<GetUserFromTokenResponse> responseCaptor = ArgumentCaptor.forClass(GetUserFromTokenResponse.class);
@@ -158,7 +157,7 @@ public class JwtServiceTest {
         when(jwtTokenProvider.getUserFromToken(mockToken)).thenReturn(null);
 
         // Act
-        jwtService.getUserFromToken(request, getUserResponseObserver);
+        grpcAuthServiceImpl.getUserFromToken(request, getUserResponseObserver);
 
         // Assert
         ArgumentCaptor<GetUserFromTokenResponse> responseCaptor = ArgumentCaptor.forClass(GetUserFromTokenResponse.class);
@@ -179,7 +178,7 @@ public class JwtServiceTest {
         when(jwtTokenProvider.getUserFromToken(mockToken)).thenReturn(mockBaseUser);
 
         // Act
-        jwtService.validateAndExtract(request, validateResponseObserver);
+        grpcAuthServiceImpl.validateAndExtract(request, validateResponseObserver);
 
         // Assert
         ArgumentCaptor<ValidateAndExtractResponse> responseCaptor = ArgumentCaptor.forClass(ValidateAndExtractResponse.class);
@@ -201,12 +200,12 @@ public class JwtServiceTest {
         when(jwtTokenProvider.getUserFromToken(mockToken)).thenReturn(null);
 
         // Act
-        jwtService.validateAndExtract(request, validateResponseObserver);
+        grpcAuthServiceImpl.validateAndExtract(request, validateResponseObserver);
 
         // Assert
         ArgumentCaptor<ValidateAndExtractResponse> responseCaptor = ArgumentCaptor.forClass(ValidateAndExtractResponse.class);
         verify(validateResponseObserver).onNext(responseCaptor.capture());
-        // Bug in JwtService: validateAndExtract doesn't call onCompleted()
+        // Bug in GrpcAuthServiceImpl: validateAndExtract doesn't call onCompleted()
         // verify(validateResponseObserver).onCompleted();
 
         ValidateAndExtractResponse response = responseCaptor.getValue();
@@ -225,7 +224,7 @@ public class JwtServiceTest {
         when(jwtTokenProvider.getUserFromToken(mockToken)).thenReturn(mockBaseUser);
 
         // Act
-        jwtService.getUserFromToken(request, getUserResponseObserver);
+        grpcAuthServiceImpl.getUserFromToken(request, getUserResponseObserver);
 
         // Assert
         ArgumentCaptor<GetUserFromTokenResponse> responseCaptor = ArgumentCaptor.forClass(GetUserFromTokenResponse.class);
@@ -265,7 +264,7 @@ public class JwtServiceTest {
         when(jwtTokenProvider.getUserFromToken(mockToken)).thenReturn(mockBaseUser);
 
         // Act
-        jwtService.getUserFromToken(request, getUserResponseObserver);
+        grpcAuthServiceImpl.getUserFromToken(request, getUserResponseObserver);
 
         // Assert
         ArgumentCaptor<GetUserFromTokenResponse> responseCaptor = ArgumentCaptor.forClass(GetUserFromTokenResponse.class);
@@ -285,7 +284,7 @@ public class JwtServiceTest {
                 .setToken(mockToken)
                 .build();
         when(jwtTokenProvider.validateToken(mockToken)).thenReturn(true);
-        jwtService.verifyToken(verifyRequest, verifyResponseObserver);
+        grpcAuthServiceImpl.verifyToken(verifyRequest, verifyResponseObserver);
         verify(verifyResponseObserver).onCompleted();
 
         // Test for getUserFromToken
@@ -293,7 +292,7 @@ public class JwtServiceTest {
                 .setToken(mockToken)
                 .build();
         when(jwtTokenProvider.getUserFromToken(mockToken)).thenReturn(mockBaseUser);
-        jwtService.getUserFromToken(getUserRequest, getUserResponseObserver);
+        grpcAuthServiceImpl.getUserFromToken(getUserRequest, getUserResponseObserver);
         verify(getUserResponseObserver).onCompleted();
 
         // Test for validateAndExtract - this method was missing onCompleted() in original code
@@ -301,7 +300,7 @@ public class JwtServiceTest {
                 .setToken(mockToken)
                 .build();
         when(jwtTokenProvider.getUserFromToken(mockToken)).thenReturn(mockBaseUser);
-        jwtService.validateAndExtract(validateRequest, validateResponseObserver);
+        grpcAuthServiceImpl.validateAndExtract(validateRequest, validateResponseObserver);
         verify(validateResponseObserver).onCompleted();
     }
 }
