@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication;
 
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.AuthenticationException;
 import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
 import io.jsonwebtoken.*;
@@ -47,7 +48,7 @@ class JwtTokenProviderTest {
         testKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
         fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 
-        jwtTokenProvider = new JwtTokenProvider(
+        jwtTokenProvider = new JwtTokenProviderImpl(
                 keyProvider,
                 userRepository,
                 jwtProperties,
@@ -384,15 +385,13 @@ class JwtTokenProviderTest {
 
     // ========== getUserFromToken Tests ==========
     @Test
-    void getUserFromToken_WithValidToken_ReturnsUser() {
-        // Prepare test data
+    void getUserFromToken_WithValidToken_ReturnsUser() throws AuthenticationException {
         when(keyProvider.getKey()).thenReturn(testKey);
         when(tokenBlacklist.isBlacklisted(anyString())).thenReturn(false);
 
         BaseUser mockUser = mock(BaseUser.class);
         when(userRepository.findByEmail(TEST_USERNAME)).thenReturn(Optional.of(mockUser));
 
-        // Create valid token
         String token = Jwts.builder()
                 .setSubject(TEST_USERNAME)
                 .setIssuedAt(Date.from(Instant.now(fixedClock)))
@@ -400,17 +399,15 @@ class JwtTokenProviderTest {
                 .signWith(testKey)
                 .compact();
 
-        // Execute test
         BaseUser result = jwtTokenProvider.getUserFromToken(token);
 
-        // Verify
         assertNotNull(result);
         assertEquals(mockUser, result);
         verify(userRepository).findByEmail(TEST_USERNAME);
     }
 
     @Test
-    void getUserFromToken_WithBlacklistedToken_ReturnsNull() {
+    void getUserFromToken_WithBlacklistedToken_ThrowsAuthenticationException() {
         String token = Jwts.builder()
                 .setSubject(TEST_USERNAME)
                 .setIssuedAt(Date.from(Instant.now(fixedClock)))
@@ -420,39 +417,31 @@ class JwtTokenProviderTest {
 
         when(tokenBlacklist.isBlacklisted(token)).thenReturn(true);
 
-        // Execute
-        BaseUser result = jwtTokenProvider.getUserFromToken(token);
+        assertThrows(AuthenticationException.class, () -> jwtTokenProvider.getUserFromToken(token));
 
-        // Verify
-        assertNull(result);
         verify(tokenBlacklist).isBlacklisted(token);
         verify(userRepository, never()).findByEmail(anyString());
     }
 
     @Test
-    void getUserFromToken_WithExpiredToken_ReturnsNull() {
-        // Prepare
+    void getUserFromToken_WithExpiredToken_ThrowsAuthenticationException() {
         when(keyProvider.getKey()).thenReturn(testKey);
         when(tokenBlacklist.isBlacklisted(anyString())).thenReturn(false);
 
         String expiredToken = Jwts.builder()
                 .setSubject(TEST_USERNAME)
                 .setIssuedAt(Date.from(Instant.now(fixedClock).minusSeconds(7200)))
-                .setExpiration(Date.from(Instant.now(fixedClock).minusSeconds(3600))) // expired 1 hour ago
+                .setExpiration(Date.from(Instant.now(fixedClock).minusSeconds(3600)))
                 .signWith(testKey)
                 .compact();
 
-        // Execute
-        BaseUser result = jwtTokenProvider.getUserFromToken(expiredToken);
+        assertThrows(AuthenticationException.class, () -> jwtTokenProvider.getUserFromToken(expiredToken));
 
-        // Verify
-        assertNull(result);
         verify(userRepository, never()).findByEmail(anyString());
     }
 
     @Test
-    void getUserFromToken_WithNonExistentUser_ReturnsNull() {
-        // Prepare
+    void getUserFromToken_WithNonExistentUser_ThrowsAuthenticationException() {
         when(keyProvider.getKey()).thenReturn(testKey);
         when(tokenBlacklist.isBlacklisted(anyString())).thenReturn(false);
         when(userRepository.findByEmail(TEST_USERNAME)).thenReturn(Optional.empty());
@@ -464,28 +453,25 @@ class JwtTokenProviderTest {
                 .signWith(testKey)
                 .compact();
 
-        // Execute
-        BaseUser result = jwtTokenProvider.getUserFromToken(token);
+        assertThrows(AuthenticationException.class, () -> jwtTokenProvider.getUserFromToken(token));
 
-        // Verify
-        assertNull(result);
         verify(userRepository).findByEmail(TEST_USERNAME);
     }
 
     @Test
-    void getUserFromToken_WithInvalidToken_ReturnsNull() {
+    void getUserFromToken_WithInvalidToken_ThrowsAuthenticationException() {
         when(keyProvider.getKey()).thenReturn(testKey);
 
-        BaseUser result = jwtTokenProvider.getUserFromToken("invalid.token");
+        assertThrows(AuthenticationException.class, () -> jwtTokenProvider.getUserFromToken("invalid.token"));
 
-        assertNull(result);
         verify(userRepository, never()).findByEmail(anyString());
     }
 
     @Test
-    void getUserFromToken_WithNullToken_ThrowsException() {
-        assertThrows(IllegalArgumentException.class, () -> jwtTokenProvider.getUserFromToken(null));
+    void getUserFromToken_WithNullToken_ThrowsAuthenticationException() {
+        assertThrows(AuthenticationException.class, () -> jwtTokenProvider.getUserFromToken(null));
     }
+
 
     // ========== hasText Method Logic Tests ==========
     @Test
@@ -510,35 +496,35 @@ class JwtTokenProviderTest {
     // ========== Objects.requireNonNull Constructor Tests ==========
     @Test
     void constructor_WithNullKeyProvider_ThrowsException() {
-        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+        assertThrows(NullPointerException.class, () -> new JwtTokenProviderImpl(
                 null, userRepository, jwtProperties, tokenBlacklist, fixedClock
         ));
     }
 
     @Test
     void constructor_WithNullUserRepository_ThrowsException() {
-        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+        assertThrows(NullPointerException.class, () -> new JwtTokenProviderImpl(
                 keyProvider, null, jwtProperties, tokenBlacklist, fixedClock
         ));
     }
 
     @Test
     void constructor_WithNullJwtProperties_ThrowsException() {
-        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+        assertThrows(NullPointerException.class, () -> new JwtTokenProviderImpl(
                 keyProvider, userRepository, null, tokenBlacklist, fixedClock
         ));
     }
 
     @Test
     void constructor_WithNullTokenBlacklist_ThrowsException() {
-        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+        assertThrows(NullPointerException.class, () -> new JwtTokenProviderImpl(
                 keyProvider, userRepository, jwtProperties, null, fixedClock
         ));
     }
 
     @Test
     void constructor_WithNullClock_ThrowsException() {
-        assertThrows(NullPointerException.class, () -> new JwtTokenProvider(
+        assertThrows(NullPointerException.class, () -> new JwtTokenProviderImpl(
                 keyProvider, userRepository, jwtProperties, tokenBlacklist, null
         ));
     }
