@@ -12,49 +12,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class CustomerUserDataMapperTest {
-    @Test
-    void testToUserData_shouldThrowNullPointerExceptionIfAddressIsNull() {
-        Customer customer = mock(Customer.class);
-        when(customer.getAddress()).thenReturn(null); // Simulating null address
-
-        UserIdentity identity = UserIdentity.newBuilder()
-                .setEmail("customer@example.com")
-                .setRole(UserRole.CUSTOMER)
-                .build();
-
-        try (MockedStatic<UserMapperUtil> mockedStatic = mockStatic(UserMapperUtil.class)) {
-            mockedStatic.when(() -> UserMapperUtil.extractUserIdentity(customer))
-                    .thenReturn(identity);
-
-            // Expecting NullPointerException due to the @NotNull contract
-            assertThrows(NullPointerException.class, () -> {
-                new CustomerUserDataMapper().toUserData(customer);
-            });
-        }
-    }
-
-    @Test
-    void testToUserData_shouldHandleMissingAddressGracefully() {
-        Customer customer = mock(Customer.class);
-        // Simulating address missing (no address set, might be handled as null or empty in the system)
-        when(customer.getAddress()).thenReturn(null);
-
-        UserIdentity identity = UserIdentity.newBuilder()
-                .setEmail("customer@example.com")
-                .setRole(UserRole.CUSTOMER)
-                .build();
-
-        try (MockedStatic<UserMapperUtil> mockedStatic = mockStatic(UserMapperUtil.class)) {
-            mockedStatic.when(() -> UserMapperUtil.extractUserIdentity(customer))
-                    .thenReturn(identity);
-
-            CustomerUserDataMapper mapper = new CustomerUserDataMapper();
-            UserData userData = mapper.toUserData(customer);
-
-            assertNotNull(userData);
-            assertNull(userData.getProfile().getAddress()); // Ensures we handle null address
-        }
-    }
 
     @Test
     void testToUserData_shouldMapCorrectly() {
@@ -77,6 +34,28 @@ public class CustomerUserDataMapperTest {
             assertEquals("customer@example.com", userData.getIdentity().getEmail());
             assertEquals(UserRole.CUSTOMER, userData.getIdentity().getRole());
             assertEquals("Jl. Testing 123", userData.getProfile().getAddress());
+        }
+    }
+
+    @Test
+    void testToUserData_shouldThrowNullPointerExceptionIfAddressIsNull() {
+        Customer customer = mock(Customer.class);
+        // Simulate that getAddress() returns null.
+        when(customer.getAddress()).thenReturn(null);
+
+        UserIdentity identity = UserIdentity.newBuilder()
+                .setEmail("customer@example.com")
+                .setRole(UserRole.CUSTOMER)
+                .build();
+
+        try (MockedStatic<UserMapperUtil> mockedStatic = mockStatic(UserMapperUtil.class)) {
+            mockedStatic.when(() -> UserMapperUtil.extractUserIdentity(customer))
+                    .thenReturn(identity);
+
+            // Since getAddress() returns null, we expect a NullPointerException
+            assertThrows(NullPointerException.class, () -> {
+                new CustomerUserDataMapper().toUserData(customer);
+            });
         }
     }
 
