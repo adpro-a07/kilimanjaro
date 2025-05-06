@@ -34,40 +34,41 @@ public class JwtTokenServiceImpl implements JwtTokenService {
     public boolean validateToken(String token) {
         try {
             if (!jwtTokenProvider.validateToken(token)) {
-                return true;
+                return false;
             }
 
-            // Ensure all additional claims are present
             String role = jwtTokenProvider.getClaimFromToken(token, CLAIM_ROLE, String.class);
             String fullName = jwtTokenProvider.getClaimFromToken(token, CLAIM_FULL_NAME, String.class);
-            UUID userId = jwtTokenProvider.getClaimFromToken(token, CLAIM_USER_ID, UUID.class);
+            String userId = jwtTokenProvider.getClaimFromToken(token, CLAIM_USER_ID, String.class);
 
             if (role == null || fullName == null || userId == null) {
                 logger.warn("Token claims are missing or invalid");
-                return true;
+                return false;
             }
 
-            return false;
+            return true;
         } catch (Exception e) {
             logger.warn("Token validation failed: {}", e.getMessage());
-            return true;
+            return false;
         }
     }
 
+
     @Override
     public TokenPair refreshToken(String refreshToken) throws AuthenticationException {
-        if (validateToken(refreshToken)) {
+        if (!validateToken(refreshToken)) {
             throw new AuthenticationException("Invalid refresh token");
         }
 
         String email = jwtTokenProvider.getEmailFromToken(refreshToken);
+        jwtTokenProvider.invalidateToken(refreshToken);
 
         return generateTokensFromEmail(email);
     }
 
     @Override
     public BaseUser getUserFromToken(String token) throws AuthenticationException {
-        if (validateToken(token)) {
+        if (!validateToken(token)) {
             throw new AuthenticationException("Invalid token");
         }
 
