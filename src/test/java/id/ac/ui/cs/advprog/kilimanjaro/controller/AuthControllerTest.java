@@ -49,7 +49,9 @@ class AuthControllerTest {
         successLoginResponse = new GenericResponse<>(
                 true,
                 "Login successful",
-                new LoginResponse("jwt.token.here", "Bearer")
+                new LoginResponse("jwt.access-token.here",
+                        "jwt.refresh-token.here",
+                        "Bearer")
         );
 
         successRegistrationResponse = new GenericResponse<>(

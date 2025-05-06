@@ -6,7 +6,6 @@ import id.ac.ui.cs.advprog.kilimanjaro.dto.*;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Customer;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Technician;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
-import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +32,7 @@ public class AuthServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private JwtTokenProvider jwtTokenProvider;
+    private JwtTokenService jwtTokenService;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -147,18 +146,18 @@ public class AuthServiceTest {
 
     @Test
     void login_ShouldReturnToken_WhenCredentialsAreValid() {
+        JwtTokenService.TokenPair tokenPair =
+                new JwtTokenService.TokenPair("jwt-access-token", "jwt-refresh-token");
         // Arrange
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
-        when(authentication.getName()).thenReturn("customer@example.com");
-        when(jwtTokenProvider.generateAccessToken(eq("customer@example.com"), anyMap())).thenReturn("jwt-token");
-        when(userRepository.findByEmail("customer@example.com")).thenReturn(Optional.of(customer));
+        when(jwtTokenService.generateTokensFromEmail(eq("customer@example.com"))).thenReturn(tokenPair);
 
         GenericResponse<LoginResponse> response = authService.login(loginRequest);
 
         // Assert
         assertNotNull(response);
-        assertEquals("jwt-token", response.getData().getToken());
+        assertEquals("jwt-access-token", response.getData().getAccessToken());
         assertEquals("customer@example.com", response.getData().getEmail());
     }
 
@@ -181,6 +180,6 @@ public class AuthServiceTest {
 
         authService.logout(token);
 
-        verify(jwtTokenProvider).invalidateToken(token);
+        verify(jwtTokenService).invalidateToken(token);
     }
 }
