@@ -151,7 +151,7 @@ public class AuthServiceTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
         when(authentication.getName()).thenReturn("customer@example.com");
-        when(jwtTokenProvider.generateToken(eq("customer@example.com"), anyMap())).thenReturn("jwt-token");
+        when(jwtTokenProvider.generateAccessToken(eq("customer@example.com"), anyMap())).thenReturn("jwt-token");
         when(userRepository.findByEmail("customer@example.com")).thenReturn(Optional.of(customer));
 
         GenericResponse<LoginResponse> response = authService.login(loginRequest);

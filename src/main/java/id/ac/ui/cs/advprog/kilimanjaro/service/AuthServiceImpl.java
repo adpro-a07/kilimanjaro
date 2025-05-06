@@ -100,7 +100,7 @@ public class AuthServiceImpl implements AuthService {
             claims.put("role", user.getRole());
             claims.put("fullName", user.getFullName());
             claims.put("id", user.getId());
-            String token = jwtTokenProvider.generateToken(username, claims);
+            String token = jwtTokenProvider.generateAccessToken(username, claims);
 
             return new GenericResponse<>(
                     true,
