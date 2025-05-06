@@ -230,6 +230,7 @@ class JwtTokenProviderImplTest {
         @Test
         @DisplayName("Should validate valid token")
         void shouldValidateValidToken() {
+            when(userRepository.existsById(testUserId)).thenReturn(true);
             boolean result = jwtTokenProvider.validateToken(validToken);
             assertTrue(result);
         }
@@ -261,7 +262,7 @@ class JwtTokenProviderImplTest {
         @Test
         @DisplayName("Should not validate token if user not found")
         void shouldNotValidateTokenIfUserNotFound() {
-            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+            when(userRepository.existsById(testUserId)).thenReturn(false);
 
             boolean result = jwtTokenProvider.validateToken(validToken);
             assertFalse(result);

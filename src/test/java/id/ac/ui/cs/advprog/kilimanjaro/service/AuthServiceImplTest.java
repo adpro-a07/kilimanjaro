@@ -91,7 +91,7 @@ public class AuthServiceImplTest {
     @Test
     void registerCustomer_ShouldCreateNewCustomer_WhenEmailIsUnique() {
         // Arrange
-        when(userRepository.findByEmail("customer@example.com")).thenReturn(Optional.empty());
+        when(userRepository.existsByEmail("customer@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
         when(userRepository.save(any(Customer.class))).thenReturn(customer);
 
@@ -107,7 +107,7 @@ public class AuthServiceImplTest {
     @Test
     void registerCustomer_ShouldThrowException_WhenEmailAlreadyExists() {
         // Arrange
-        when(userRepository.findByEmail("customer@example.com")).thenReturn(Optional.of(customer));
+        when(userRepository.existsByEmail("customer@example.com")).thenReturn(true);
 
         // Act & Assert
         assertThrows(UserAlreadyExistsException.class, () -> {
@@ -119,7 +119,7 @@ public class AuthServiceImplTest {
     @Test
     void registerTechnician_ShouldCreateNewTechnician_WhenEmailIsUnique() {
         // Arrange
-        when(userRepository.findByEmail("technician@example.com")).thenReturn(Optional.empty());
+        when(userRepository.existsByEmail("technician@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
         when(userRepository.save(any(Technician.class))).thenReturn(technician);
 
@@ -135,7 +135,7 @@ public class AuthServiceImplTest {
     @Test
     void registerTechnician_ShouldThrowException_WhenEmailAlreadyExists() {
         // Arrange
-        when(userRepository.findByEmail("technician@example.com")).thenReturn(Optional.of(technician));
+        when(userRepository.existsByEmail("technician@example.com")).thenReturn(true);
 
         // Act & Assert
         assertThrows(UserAlreadyExistsException.class, () -> {
