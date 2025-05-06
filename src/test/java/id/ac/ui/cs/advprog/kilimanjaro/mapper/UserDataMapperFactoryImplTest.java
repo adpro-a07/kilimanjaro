@@ -115,16 +115,16 @@ class UserDataMapperFactoryImplTest {
     void testMapperFunctionality() {
         // Given
         Admin admin = mock(Admin.class);
-        when(adminMapper.toUserData(any(Admin.class))).thenReturn(userData);
+        when(adminMapper.toUserData(any(Admin.class), anyBoolean())).thenReturn(userData);
 
         // When
         UserDataMapper<Admin> mapper = factory.getMapper(UserRole.ADMIN);
-        UserData result = mapper.toUserData(admin);
+        UserData result = mapper.toUserData(admin, true);
 
         // Then
         assertNotNull(result);
         assertEquals(userData, result);
-        verify(adminMapper).toUserData(admin);
+        verify(adminMapper).toUserData(admin, true);
     }
 
     @Test

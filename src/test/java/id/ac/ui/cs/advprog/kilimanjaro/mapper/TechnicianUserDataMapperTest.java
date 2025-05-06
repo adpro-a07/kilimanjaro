@@ -44,6 +44,36 @@ public class TechnicianUserDataMapperTest {
     }
 
     @Test
+    void testToUserData_includeProfileFlagFalseShouldMapWithoutUserProfile() {
+        Technician technician = mock(Technician.class);
+        when(technician.getAddress()).thenReturn("Workshop Lane");
+        when(technician.getExperience()).thenReturn("5 years");
+        when(technician.getTotalJobsDone()).thenReturn(42);
+        when(technician.getTotalIncome()).thenReturn(1250000L);
+
+        UserIdentity identity = UserIdentity.newBuilder()
+                .setEmail("tech@example.com")
+                .setRole(UserRole.TECHNICIAN)
+                .build();
+
+        try (MockedStatic<UserMapperUtil> mockedStatic = mockStatic(UserMapperUtil.class)) {
+            mockedStatic.when(() -> UserMapperUtil.extractUserIdentity(technician))
+                    .thenReturn(identity);
+
+            TechnicianUserDataMapper mapper = new TechnicianUserDataMapper();
+            UserData userData = mapper.toUserData(technician, false);
+
+            assertNotNull(userData);
+            assertEquals("tech@example.com", userData.getIdentity().getEmail());
+            assertEquals(UserRole.TECHNICIAN, userData.getIdentity().getRole());
+            assertTrue(userData.getProfile().getAddress().isEmpty());
+            assertTrue(userData.getProfile().getWorkExperience().isEmpty());
+            assertEquals(0, userData.getProfile().getTotalJobsDone());
+            assertEquals(0, userData.getProfile().getTotalIncome());
+        }
+    }
+
+    @Test
     void testSupportsRole_shouldReturnTechnicianRole() {
         TechnicianUserDataMapper mapper = new TechnicianUserDataMapper();
         assertEquals("TECHNICIAN", mapper.supportsRole().name());

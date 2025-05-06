@@ -84,6 +84,32 @@ public class CustomerUserDataMapperTest {
         }
     }
 
+    @Test
+    void testToUserData_includeProfileFlagFalseShouldMapWithoutUserProfile() {
+        Customer customer = mock(Customer.class);
+        when(customer.getAddress()).thenReturn("Jl. Testing 123");
+
+        UserIdentity fakeIdentity = UserIdentity.newBuilder()
+                .setEmail("customer@example.com")
+                .setRole(UserRole.CUSTOMER)
+                .build();
+
+        try (MockedStatic<UserMapperUtil> mockedStatic = mockStatic(UserMapperUtil.class)) {
+            mockedStatic.when(() -> UserMapperUtil.extractUserIdentity(customer))
+                    .thenReturn(fakeIdentity);
+
+            CustomerUserDataMapper mapper = new CustomerUserDataMapper();
+            UserData userData = mapper.toUserData(customer, false);
+
+            assertNotNull(userData);
+            assertEquals("customer@example.com", userData.getIdentity().getEmail());
+            assertEquals(UserRole.CUSTOMER, userData.getIdentity().getRole());
+            assertTrue(userData.getProfile().getAddress().isEmpty());
+            assertTrue(userData.getProfile().getWorkExperience().isEmpty());
+            assertEquals(0, userData.getProfile().getTotalJobsDone());
+            assertEquals(0, userData.getProfile().getTotalIncome());
+        }
+    }
 
     @Test
     void testSupportsRole_shouldReturnCustomerRole() {

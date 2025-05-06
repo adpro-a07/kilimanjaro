@@ -37,6 +37,32 @@ public class AdminUserDataMapperTest {
     }
 
     @Test
+    void testToUserData_includeProfileFlagFalseShouldMapWithoutUserProfile() {
+        Admin admin = mock(Admin.class);
+
+        UserIdentity identity = UserIdentity.newBuilder()
+                .setEmail("admin@example.com")
+                .setRole(UserRole.ADMIN)
+                .build();
+
+        try (MockedStatic<UserMapperUtil> mockedStatic = mockStatic(UserMapperUtil.class)) {
+            mockedStatic.when(() -> UserMapperUtil.extractUserIdentity(admin))
+                    .thenReturn(identity);
+
+            AdminUserDataMapper mapper = new AdminUserDataMapper();
+            UserData userData = mapper.toUserData(admin, false);
+
+            assertNotNull(userData);
+            assertEquals("admin@example.com", userData.getIdentity().getEmail());
+            assertEquals(UserRole.ADMIN, userData.getIdentity().getRole());
+            assertTrue(userData.getProfile().getAddress().isEmpty());
+            assertTrue(userData.getProfile().getWorkExperience().isEmpty());
+            assertEquals(0, userData.getProfile().getTotalJobsDone());
+            assertEquals(0, userData.getProfile().getTotalIncome());
+        }
+    }
+
+    @Test
     void testSupportsRole_shouldReturnAdminRole() {
         AdminUserDataMapper mapper = new AdminUserDataMapper();
         assertEquals("ADMIN", mapper.supportsRole().name());
