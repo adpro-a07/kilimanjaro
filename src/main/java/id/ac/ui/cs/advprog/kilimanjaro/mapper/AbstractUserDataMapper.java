@@ -8,11 +8,21 @@ import id.ac.ui.cs.advprog.kilimanjaro.model.enums.UserRole;
 import id.ac.ui.cs.advprog.kilimanjaro.util.UserMapperUtil;
 
 public abstract class AbstractUserDataMapper<T extends BaseUser> implements UserDataMapper<T> {
-
     @Override
     public UserData toUserData(T user) {
         UserIdentity userIdentity = UserMapperUtil.extractUserIdentity(user);
         UserProfile userProfile = buildProfile(user);
+
+        return UserData.newBuilder()
+                .setIdentity(userIdentity)
+                .setProfile(userProfile)
+                .build();
+    }
+
+    @Override
+    public UserData toUserData(T user, boolean includeProfile) {
+        UserIdentity userIdentity = UserMapperUtil.extractUserIdentity(user);
+        UserProfile userProfile = includeProfile ? buildProfile(user) : UserProfile.getDefaultInstance();
 
         return UserData.newBuilder()
                 .setIdentity(userIdentity)

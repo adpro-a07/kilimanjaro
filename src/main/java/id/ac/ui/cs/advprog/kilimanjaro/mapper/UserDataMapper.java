@@ -6,5 +6,8 @@ import id.ac.ui.cs.advprog.kilimanjaro.model.enums.UserRole;
 
 public interface UserDataMapper<T extends BaseUser> {
     UserData toUserData(T user);
+
+    UserData toUserData(T user, boolean includeProfile);
+
     UserRole supportsRole();
 }
