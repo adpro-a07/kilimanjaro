@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public GenericResponse<Void> registerCustomer(RegisterCustomerRequest registerRequest) {
-        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+        if (userRepository.existsByEmail(registerRequest.getEmail())) {
             throw new UserAlreadyExistsException("Email is already in use");
         }
 
@@ -54,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public GenericResponse<Void> registerTechnician(RegisterTechnicianRequest registerRequest) {
-        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+        if (userRepository.existsByEmail(registerRequest.getEmail())) {
             throw new UserAlreadyExistsException("Email is already in use");
         }
 

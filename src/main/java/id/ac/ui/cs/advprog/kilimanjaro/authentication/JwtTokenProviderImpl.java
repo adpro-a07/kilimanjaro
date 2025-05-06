@@ -168,7 +168,7 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
     private boolean verifyUserExists(String userId) {
         try {
             UUID userUuid = UUID.fromString(userId);
-            return userRepository.findById(userUuid).isPresent();
+            return userRepository.existsById(userUuid);
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid user ID format in token", e);
             return false;
