@@ -1,25 +1,33 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication;
 
-import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.AuthenticationException;
-import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
-import org.springframework.security.core.userdetails.UserDetails;
+import io.jsonwebtoken.Claims;
 
+import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
 
 public interface JwtTokenProvider {
-    String generateToken(String username);
+    /**
+     * Record to represent a pair of access and refresh tokens
+     */
+    String generateAccessToken(String username, Map<String, Object> additionalClaims);
 
-    String generateToken(String username, Map<String, Object> additionalClaims);
+    String generateRefreshToken(String username, Map<String, Object> additionalClaims);
 
-    String extractUsername(String token);
+    String getEmailFromToken(String token);
+
+    UUID getUserIdFromToken(String token);
+
+    String getTokenType(String token);
 
     boolean validateToken(String token);
 
-    boolean validateToken(String token, UserDetails userDetails);
-
     void invalidateToken(String token);
 
-    BaseUser getUserFromToken(String token) throws AuthenticationException;
+    <T> T getClaimFromToken(String token, String claimName, Class<T> claimType);
 
-    <T> T extractClaim(String token, String claimName, Class<T> claimType);
+    <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver);
+
+    Date getExpirationDateFromToken(String token);
 }

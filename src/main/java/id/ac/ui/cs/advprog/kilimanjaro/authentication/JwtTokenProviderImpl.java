@@ -1,22 +1,26 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication;
 
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.AuthenticationException;
-import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
 import io.jsonwebtoken.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 
 @Component
 public class JwtTokenProviderImpl implements JwtTokenProvider {
     private static final Logger logger = LoggerFactory.getLogger(JwtTokenProviderImpl.class);
+
+    private static final String TOKEN_TYPE_ACCESS = "access";
+    private static final String TOKEN_TYPE_REFRESH = "refresh";
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String USER_ID_CLAIM = "userId";
 
     private final SigningKeyProvider keyProvider;
     private final UserRepository userRepository;
@@ -29,96 +33,151 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
                                 JwtProperties properties,
                                 TokenBlacklist blacklist,
                                 Clock clock) {
-        this.keyProvider = Objects.requireNonNull(keyProvider);
-        this.userRepository = Objects.requireNonNull(userRepository);
-        this.properties = Objects.requireNonNull(properties);
-        this.blacklist = Objects.requireNonNull(blacklist);
-        this.clock = Objects.requireNonNull(clock);
+        this.keyProvider = Objects.requireNonNull(keyProvider, "SigningKeyProvider must not be null");
+        this.userRepository = Objects.requireNonNull(userRepository, "UserRepository must not be null");
+        this.properties = Objects.requireNonNull(properties, "JwtProperties must not be null");
+        this.blacklist = Objects.requireNonNull(blacklist, "TokenBlacklist must not be null");
+        this.clock = Objects.requireNonNull(clock, "Clock must not be null");
     }
 
     @Override
-    public String generateToken(String username) {
-        return generateToken(username, new HashMap<>());
+    public String generateAccessToken(String username, Map<String, Object> additionalClaims) {
+        validateTokenInputs(username, additionalClaims);
+
+        Map<String, Object> claims = new HashMap<>(additionalClaims);
+        claims.put(TOKEN_TYPE_CLAIM, TOKEN_TYPE_ACCESS);
+
+        return createToken(username, claims, properties.getAccessExpiration());
     }
 
     @Override
-    public String generateToken(String username, Map<String, Object> additionalClaims) {
+    public String generateRefreshToken(String username, Map<String, Object> additionalClaims) {
+        validateTokenInputs(username, additionalClaims);
+
+        Map<String, Object> claims = new HashMap<>(additionalClaims);
+        claims.put(TOKEN_TYPE_CLAIM, TOKEN_TYPE_REFRESH);
+
+        return createToken(username, claims, properties.getRefreshExpiration());
+    }
+
+    private void validateTokenInputs(String username, Map<String, Object> additionalClaims) {
         Assert.hasText(username, "Username must not be null or empty");
+        Assert.notNull(additionalClaims, "Additional claims must not be null");
+    }
 
+    private String createToken(String subject, Map<String, Object> claims, long expiration) {
         Instant now = clock.instant();
-        Instant expiry = now.plusMillis(properties.getExpiration());
+        Instant expiry = now.plusMillis(expiration);
 
-        logger.debug("Generating token for user: {}", username);
-
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(expiry))
-                .addClaims(additionalClaims)
-                .signWith(keyProvider.getKey(), SignatureAlgorithm.HS256)
-                .compact();
+        try {
+            return Jwts.builder()
+                    .setSubject(subject)
+                    .setIssuedAt(Date.from(now))
+                    .setExpiration(Date.from(expiry))
+                    .addClaims(claims)
+                    .signWith(keyProvider.getKey(), SignatureAlgorithm.HS256)
+                    .compact();
+        } catch (JwtException e) {
+            logger.error("Error creating JWT token", e);
+            throw new AuthenticationException("Failed to create token", e);
+        }
     }
 
     @Override
-    public String extractUsername(String token) {
+    public String getEmailFromToken(String token) {
+        validateToken(token);
+        return getAllClaimsFromToken(token).getSubject();
+    }
+
+    @Override
+    public UUID getUserIdFromToken(String token) {
+        validateToken(token);
+        try {
+            String userId = getAllClaimsFromToken(token).get(USER_ID_CLAIM, String.class);
+            return UUID.fromString(userId);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid user ID in token", e);
+            throw new AuthenticationException("Invalid user ID format in token", e);
+        }
+    }
+
+    @Override
+    public String getTokenType(String token) {
+        validateToken(token);
+        return getAllClaimsFromToken(token).get(TOKEN_TYPE_CLAIM, String.class);
+    }
+
+    @Override
+    public <T> T getClaimFromToken(String token, String claimName, Class<T> claimType) {
+        validateToken(token);
+        return getAllClaimsFromToken(token).get(claimName, claimType);
+    }
+
+    @Override
+    public <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
+        validateToken(token);
+        Claims claims = getAllClaimsFromToken(token);
+        return claimsResolver.apply(claims);
+    }
+
+    private Claims getAllClaimsFromToken(String token) {
         Assert.hasText(token, "Token must not be null or empty");
 
         try {
-            return extractAllClaims(token).getSubject();
+            return Jwts.parserBuilder()
+                    .setSigningKey(keyProvider.getKey())
+                    .setClock(() -> Date.from(clock.instant()))
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
         } catch (JwtException e) {
-            logger.warn("Failed to extract username from token", e);
-            throw e;
+            logger.error("Failed to parse JWT claims", e);
+            throw new AuthenticationException("Invalid token", e);
         }
     }
 
     @Override
     public boolean validateToken(String token) {
-        if (isEmpty(token)) return false;
+        Assert.hasText(token, "Token must not be null or empty");
 
         try {
             if (blacklist.isBlacklisted(token)) {
-                logger.info("Token is blacklisted");
+                logger.warn("Token is blacklisted");
                 return false;
             }
 
-            Instant expiration = extractAllClaims(token).getExpiration().toInstant();
-            return expiration.isAfter(clock.instant());
+            Claims claims = getAllClaimsFromToken(token);
+
+            if (isTokenExpired(claims)) {
+                logger.warn("Token is expired");
+                return false;
+            }
+
+            String userId = claims.get(USER_ID_CLAIM, String.class);
+            return verifyUserExists(userId);
+
         } catch (JwtException | IllegalArgumentException e) {
-            logger.warn("Token validation failed", e);
+            logger.warn("Invalid token", e);
+            return false;  // Returning false for any JwtException
+        } catch (Exception e) {
+            logger.error("Unexpected error during token validation", e);
+            return false;  // Handle unexpected errors gracefully
+        }
+    }
+
+    private boolean verifyUserExists(String userId) {
+        try {
+            UUID userUuid = UUID.fromString(userId);
+            return userRepository.findById(userUuid).isPresent();
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid user ID format in token", e);
             return false;
         }
     }
 
-    @Override
-    public boolean validateToken(String token, UserDetails userDetails) {
-        if (isEmpty(token) || userDetails == null) {
-            logger.warn("Token or UserDetails is null during validation");
-            return false;
-        }
-
-        try {
-            if (blacklist.isBlacklisted(token)) {
-                logger.info("Token is blacklisted");
-                return false;
-            }
-
-            Claims claims = extractAllClaims(token);
-            String username = claims.getSubject();
-            Instant expiration = claims.getExpiration().toInstant();
-
-            boolean valid = username.equals(userDetails.getUsername()) &&
-                    expiration.isAfter(clock.instant());
-
-            if (!valid) {
-                logger.info("Token validation failed: {}",
-                        !username.equals(userDetails.getUsername()) ? "username mismatch" : "token expired");
-            }
-
-            return valid;
-        } catch (JwtException | IllegalArgumentException e) {
-            logger.warn("Token validation failed", e);
-            return false;
-        }
+    private boolean isTokenExpired(Claims claims) {
+        Date expiration = claims.getExpiration();
+        return expiration != null && expiration.before(Date.from(clock.instant()));
     }
 
     @Override
@@ -126,74 +185,18 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
         Assert.hasText(token, "Token must not be null or empty");
 
         try {
-            Instant expiry = extractAllClaims(token).getExpiration().toInstant();
+            Instant expiry = getAllClaimsFromToken(token).getExpiration().toInstant();
             blacklist.blacklist(token, expiry.toEpochMilli());
             logger.debug("Token invalidated and blacklisted");
         } catch (JwtException e) {
-            logger.warn("Failed to invalidate token", e);
-            throw e;
+            logger.error("Failed to invalidate token", e);
+            throw new AuthenticationException("Failed to invalidate token", e);
         }
     }
 
     @Override
-    public BaseUser getUserFromToken(String token) throws AuthenticationException {
-        if (isEmpty(token)) {
-            throw new AuthenticationException("Token must not be null or empty");
-        }
-
-        try {
-            if (blacklist.isBlacklisted(token)) {
-                logger.warn("Attempt to retrieve user from blacklisted token");
-                throw new AuthenticationException("Token is blacklisted");
-            }
-
-            Claims claims = extractAllClaims(token);
-            if (claims.getExpiration().toInstant().isBefore(clock.instant())) {
-                logger.warn("Attempt to retrieve user from expired token");
-                throw new AuthenticationException("Token is expired");
-            }
-
-            String email = claims.getSubject();
-            return userRepository.findByEmail(email)
-                    .orElseThrow(() -> new AuthenticationException("User not found for token subject"));
-        } catch (JwtException e) {
-            logger.warn("JWT parsing error", e);
-            throw new AuthenticationException("Invalid JWT token", e);
-        } catch (Exception e) {
-            logger.warn("Unexpected error extracting user from token", e);
-            throw new AuthenticationException("Authentication failed", e);
-        }
-    }
-
-
-    @Override
-    public <T> T extractClaim(String token, String claimName, Class<T> claimType) {
-        Assert.hasText(token, "Token must not be null or empty");
-        Assert.hasText(claimName, "Claim name must not be null or empty");
-
-        try {
-            Claims claims = extractAllClaims(token);
-            Object value = claims.get(claimName);
-            if (value == null) {
-                throw new IllegalArgumentException("Claim '" + claimName + "' not found in token");
-            }
-            return claims.get(claimName, claimType);
-        } catch (JwtException e) {
-            logger.warn("Failed to extract claim '{}' from token", claimName, e);
-            throw e;
-        }
-    }
-
-    private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(keyProvider.getKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
-
-    private boolean isEmpty(String str) {
-        return str == null || str.trim().isEmpty();
+    public Date getExpirationDateFromToken(String token) {
+        validateToken(token);
+        return getClaimFromToken(token, Claims::getExpiration);
     }
 }
