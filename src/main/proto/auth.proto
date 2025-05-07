@@ -71,7 +71,6 @@ message UserProfile {
   string work_experience = 2;
   uint32 total_jobs_done = 3;
   uint64 total_income = 4;
-  google.protobuf.Timestamp last_login = 5;
 }
 
 // Complete user data
@@ -184,4 +183,42 @@ service AuthService {
 
   // Check service health
   rpc CheckHealth(google.protobuf.Empty) returns (HealthCheckResponse) {}
+}
+
+// --- UserService definition ---
+
+// User listing request with pagination and filtering
+message ListUsersRequest {
+  RequestMetadata metadata = 1;
+  UserRole role = 2;
+  uint32 page_size = 3;           // Number of users to return (default determined by server)
+  uint32 page_number = 4;         // Page number (0-indexed)
+}
+
+// User listing response
+message ListUsersResponse {
+  ResponseStatus status = 1;
+  repeated UserData users = 2;    // List of users
+  uint32 total_count = 3;         // Total number of users matching criteria
+  uint32 total_pages = 4;         // Total number of pages
+  uint32 current_page = 5;        // Current page number
+}
+
+// Random technician request
+message GetRandomTechnicianRequest {
+  RequestMetadata metadata = 1;
+}
+
+// Random technician response
+message GetRandomTechnicianResponse {
+  ResponseStatus status = 1;
+  UserData technician = 2;
+}
+
+service UserService {
+  // List users with optional filtering by role
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {}
+
+  // Get a random technician (for assignment purposes)
+  rpc GetRandomTechnician(GetRandomTechnicianRequest) returns (GetRandomTechnicianResponse) {}
 }
