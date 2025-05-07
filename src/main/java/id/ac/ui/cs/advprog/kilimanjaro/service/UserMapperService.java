@@ -1,9 +1,11 @@
 package id.ac.ui.cs.advprog.kilimanjaro.service;
 
 import id.ac.ui.cs.advprog.kilimanjaro.auth.grpc.UserData;
+import id.ac.ui.cs.advprog.kilimanjaro.auth.grpc.UserRole;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.AuthenticationException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserNotFoundException;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface UserMapperService {
@@ -55,4 +57,29 @@ public interface UserMapperService {
      * @throws UserNotFoundException if the user is not found
      */
     UserData getUserDataFromToken(String token) throws AuthenticationException, UserNotFoundException;
+
+    /**
+     * Get users with pagination, filtering and sorting.
+     *
+     * @param role Role to filter by (optional)
+     * @param pageSize Number of users per page
+     * @param pageNumber Page number (0-indexed)
+     * @return List of user data objects
+     */
+    List<UserData> listUsers(UserRole role, int pageSize, int pageNumber);
+
+    /**
+     * Count total users with a specific role.
+     *
+     * @param role Role to count
+     * @return Total count of users with the specified role
+     */
+    int countUsersByRole(UserRole role);
+
+    /**
+     * Get a random technician from the system.
+     *
+     * @return Random technician data
+     */
+    UserData getRandomTechnician();
 }
