@@ -153,9 +153,25 @@ tasks.test {
     finalizedBy(tasks.jacocoTestReport)
 }
 
-tasks.jacocoTestReport{
+tasks.jacocoTestReport {
     dependsOn(tasks.test)
     reports {
         xml.required.set(true)
+        html.required.set(true)
     }
+}
+
+// Apply the class exclusion **outside** the block
+val excludedPackages = listOf(
+    "**/id/ac/ui/cs/advprog/kilimanjaro/auth/grpc/**"
+)
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude(excludedPackages)
+            }
+        })
+    )
 }
