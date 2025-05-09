@@ -1,8 +1,10 @@
 package id.ac.ui.cs.advprog.kilimanjaro.service;
 
-import id.ac.ui.cs.advprog.kilimanjaro.authentication.JwtTokenProvider;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.AuthenticationException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.interfaces.JwtTokenGenerator;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.interfaces.JwtTokenParser;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.interfaces.JwtTokenValidator;
 import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.model.enums.UserRole;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
@@ -19,7 +21,9 @@ import static org.mockito.Mockito.*;
 
 class JwtTokenServiceImplTest {
 
-    private JwtTokenProvider jwtTokenProvider;
+    private JwtTokenParser jwtTokenParser;
+    private JwtTokenValidator jwtTokenValidator;
+    private JwtTokenGenerator jwtTokenGenerator;
     private UserRepository userRepository;
     private JwtTokenServiceImpl jwtTokenService;
 
@@ -30,9 +34,16 @@ class JwtTokenServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        jwtTokenProvider = mock(JwtTokenProvider.class);
+        jwtTokenParser = mock(JwtTokenParser.class);
+        jwtTokenValidator = mock(JwtTokenValidator.class);
+        jwtTokenGenerator = mock(JwtTokenGenerator.class);
         userRepository = mock(UserRepository.class);
-        jwtTokenService = new JwtTokenServiceImpl(jwtTokenProvider, userRepository);
+        jwtTokenService = new JwtTokenServiceImpl(
+                jwtTokenParser,
+                jwtTokenValidator,
+                jwtTokenGenerator,
+                userRepository
+        );
 
         when(user.getId()).thenReturn(userId);
         when(user.getFullName()).thenReturn("User Name");
@@ -44,11 +55,11 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testValidateTokenReturnsTrueIfValidAndAllClaimsPresent() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
-        when(jwtTokenProvider.getTokenType(token)).thenReturn("access");
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
+        when(jwtTokenParser.getTokenType(token)).thenReturn("access");
 
         boolean result = jwtTokenService.validateToken(token);
 
@@ -57,7 +68,7 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testValidateTokenReturnsFalseIfProviderSaysInvalid() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(false);
+        when(jwtTokenValidator.validateToken(token)).thenReturn(false);
 
         boolean result = jwtTokenService.validateToken(token);
 
@@ -66,10 +77,10 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testValidateTokenReturnsFalseIfRoleClaimMissing() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn(null);
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn(null);
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
 
         boolean result = jwtTokenService.validateToken(token);
 
@@ -78,10 +89,10 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testValidateTokenReturnsFalseIfFullNameClaimMissing() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn(null);
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn(null);
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
 
         boolean result = jwtTokenService.validateToken(token);
 
@@ -90,10 +101,10 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testValidateTokenReturnsFalseIfUserIdClaimMissing() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn(null);
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn(null);
 
         boolean result = jwtTokenService.validateToken(token);
 
@@ -102,7 +113,7 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testValidateTokenReturnsFalseIfExceptionThrown() {
-        when(jwtTokenProvider.validateToken(token)).thenThrow(new RuntimeException("Boom"));
+        when(jwtTokenValidator.validateToken(token)).thenThrow(new RuntimeException("Boom"));
 
         boolean result = jwtTokenService.validateToken(token);
 
@@ -114,11 +125,11 @@ class JwtTokenServiceImplTest {
         String token = "validToken";
         String tokenType = "access";
 
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("John Doe");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn("1234");
-        when(jwtTokenProvider.getTokenType(token)).thenReturn("access");
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("John Doe");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn("1234");
+        when(jwtTokenParser.getTokenType(token)).thenReturn("access");
 
         boolean result = jwtTokenService.validateToken(token, tokenType);
         assertTrue(result);
@@ -129,11 +140,11 @@ class JwtTokenServiceImplTest {
         String token = "validToken";
         String tokenType = "refresh";
 
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("John Doe");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn("1234");
-        when(jwtTokenProvider.getTokenType(token)).thenReturn("access");
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("John Doe");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn("1234");
+        when(jwtTokenParser.getTokenType(token)).thenReturn("access");
 
         boolean result = jwtTokenService.validateToken(token, tokenType);
         assertFalse(result);
@@ -143,11 +154,11 @@ class JwtTokenServiceImplTest {
     void testValidateToken_withNullTokenType_shouldReturnTrue() {
         String token = "validToken";
 
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("John Doe");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn("1234");
-        when(jwtTokenProvider.getTokenType(token)).thenReturn("access");
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("John Doe");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn("1234");
+        when(jwtTokenParser.getTokenType(token)).thenReturn("access");
 
         boolean result = jwtTokenService.validateToken(token, null);
         assertTrue(result);
@@ -158,11 +169,11 @@ class JwtTokenServiceImplTest {
         String token = "tokenWithMissingClaims";
         String tokenType = "access";
 
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn(null); // Missing role
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("John Doe");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn("1234");
-        when(jwtTokenProvider.getTokenType(token)).thenReturn("access");
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn(null); // Missing role
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("John Doe");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn("1234");
+        when(jwtTokenParser.getTokenType(token)).thenReturn("access");
 
         boolean result = jwtTokenService.validateToken(token, tokenType);
         assertFalse(result);
@@ -173,7 +184,7 @@ class JwtTokenServiceImplTest {
         String token = "invalidToken";
         String tokenType = "access";
 
-        when(jwtTokenProvider.validateToken(token)).thenReturn(false);
+        when(jwtTokenValidator.validateToken(token)).thenReturn(false);
 
         boolean result = jwtTokenService.validateToken(token, tokenType);
         assertFalse(result);
@@ -184,7 +195,7 @@ class JwtTokenServiceImplTest {
         String token = "exceptionToken";
         String tokenType = "access";
 
-        when(jwtTokenProvider.validateToken(token)).thenThrow(new RuntimeException("Boom"));
+        when(jwtTokenValidator.validateToken(token)).thenThrow(new RuntimeException("Boom"));
 
         boolean result = jwtTokenService.validateToken(token, tokenType);
         assertFalse(result);
@@ -194,15 +205,15 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testRefreshTokenReturnsNewTokensIfValid() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
-        when(jwtTokenProvider.getTokenType(token)).thenReturn("access");
-        when(jwtTokenProvider.getEmailFromToken(token)).thenReturn(email);
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
+        when(jwtTokenParser.getTokenType(token)).thenReturn("access");
+        when(jwtTokenParser.getEmailFromToken(token)).thenReturn(email);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        when(jwtTokenProvider.generateAccessToken(eq(email), anyMap())).thenReturn("new-access");
-        when(jwtTokenProvider.generateRefreshToken(eq(email), anyMap())).thenReturn("new-refresh");
+        when(jwtTokenGenerator.generateAccessToken(eq(email), anyMap())).thenReturn("new-access");
+        when(jwtTokenGenerator.generateRefreshToken(eq(email), anyMap())).thenReturn("new-refresh");
 
         JwtTokenService.TokenPair tokens = jwtTokenService.refreshToken(token);
 
@@ -210,30 +221,30 @@ class JwtTokenServiceImplTest {
         assertThat(tokens.refreshToken()).isEqualTo("new-refresh");
 
         // Make sure refresh token is now invalid
-        verify(jwtTokenProvider).invalidateToken(token);
+        verify(jwtTokenValidator).invalidateToken(token);
     }
 
     @Test
     void testRefreshTokenThrowsIfTokenInvalid() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(false);
+        when(jwtTokenValidator.validateToken(token)).thenReturn(false);
 
         assertThatThrownBy(() -> jwtTokenService.refreshToken(token))
                 .isInstanceOf(AuthenticationException.class)
                 .hasMessage("Invalid refresh token");
 
-        verify(jwtTokenProvider, never()).invalidateToken(token);
+        verify(jwtTokenValidator, never()).invalidateToken(token);
     }
 
     // getUserFromToken
 
     @Test
     void testGetUserFromTokenReturnsUserIfValid() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
-        when(jwtTokenProvider.getTokenType(token)).thenReturn("access");
-        when(jwtTokenProvider.getUserIdFromToken(token)).thenReturn(userId);
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
+        when(jwtTokenParser.getTokenType(token)).thenReturn("access");
+        when(jwtTokenParser.getUserIdFromToken(token)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         BaseUser result = jwtTokenService.getUserFromToken(token);
@@ -243,7 +254,7 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testGetUserFromTokenThrowsIfInvalidToken() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(false);
+        when(jwtTokenValidator.validateToken(token)).thenReturn(false);
 
         assertThatThrownBy(() -> jwtTokenService.getUserFromToken(token))
                 .isInstanceOf(AuthenticationException.class);
@@ -251,12 +262,12 @@ class JwtTokenServiceImplTest {
 
     @Test
     void testGetUserFromTokenThrowsIfUserNotFound() {
-        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
-        when(jwtTokenProvider.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
-        when(jwtTokenProvider.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
-        when(jwtTokenProvider.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
-        when(jwtTokenProvider.getTokenType(token)).thenReturn("access");
-        when(jwtTokenProvider.getUserIdFromToken(token)).thenReturn(userId);
+        when(jwtTokenValidator.validateToken(token)).thenReturn(true);
+        when(jwtTokenParser.getClaimFromToken(token, "role", String.class)).thenReturn("ROLE_USER");
+        when(jwtTokenParser.getClaimFromToken(token, "fullName", String.class)).thenReturn("User Name");
+        when(jwtTokenParser.getClaimFromToken(token, "userId", String.class)).thenReturn(userId.toString());
+        when(jwtTokenParser.getTokenType(token)).thenReturn("access");
+        when(jwtTokenParser.getUserIdFromToken(token)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> jwtTokenService.getUserFromToken(token))
@@ -270,12 +281,12 @@ class JwtTokenServiceImplTest {
     void testInvalidateTokenCallsProvider() {
         jwtTokenService.invalidateToken(token);
 
-        verify(jwtTokenProvider).invalidateToken(token);
+        verify(jwtTokenValidator).invalidateToken(token);
     }
 
     @Test
     void testInvalidateTokenHandlesExceptionGracefully() {
-        doThrow(new RuntimeException("Fail")).when(jwtTokenProvider).invalidateToken(token);
+        doThrow(new RuntimeException("Fail")).when(jwtTokenValidator).invalidateToken(token);
 
         jwtTokenService.invalidateToken(token); // should not throw
     }
@@ -285,8 +296,8 @@ class JwtTokenServiceImplTest {
     @Test
     void testGenerateTokensFromEmailReturnsTokens() {
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        when(jwtTokenProvider.generateAccessToken(eq(email), anyMap())).thenReturn("access");
-        when(jwtTokenProvider.generateRefreshToken(eq(email), anyMap())).thenReturn("refresh");
+        when(jwtTokenGenerator.generateAccessToken(eq(email), anyMap())).thenReturn("access");
+        when(jwtTokenGenerator.generateRefreshToken(eq(email), anyMap())).thenReturn("refresh");
 
         JwtTokenService.TokenPair pair = jwtTokenService.generateTokensFromEmail(email);
 
