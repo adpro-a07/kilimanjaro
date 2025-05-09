@@ -36,7 +36,8 @@ public class GrpcAuthServiceImpl extends AuthServiceGrpc.AuthServiceImplBase {
         boolean includeUserData = request.getIncludeUserData();
 
         try {
-            boolean isValid = jwtTokenService.validateToken(token);
+            // Just validate access tokens for now (security reasons)
+            boolean isValid = jwtTokenService.validateToken(token, "access");
             responseBuilder.setValid(isValid);
 
             if (isValid && includeUserData) {

@@ -32,6 +32,11 @@ public class JwtTokenServiceImpl implements JwtTokenService {
 
     @Override
     public boolean validateToken(String token) {
+        return validateToken(token, null);
+    }
+
+    @Override
+    public boolean validateToken(String token, String tokenType) {
         try {
             if (!jwtTokenProvider.validateToken(token)) {
                 return false;
@@ -40,13 +45,18 @@ public class JwtTokenServiceImpl implements JwtTokenService {
             String role = jwtTokenProvider.getClaimFromToken(token, CLAIM_ROLE, String.class);
             String fullName = jwtTokenProvider.getClaimFromToken(token, CLAIM_FULL_NAME, String.class);
             String userId = jwtTokenProvider.getClaimFromToken(token, CLAIM_USER_ID, String.class);
+            String claimTokenType = jwtTokenProvider.getTokenType(token);
 
-            if (role == null || fullName == null || userId == null) {
+            if (role == null || fullName == null || userId == null || claimTokenType == null) {
                 logger.warn("Token claims are missing or invalid");
                 return false;
             }
 
-            return true;
+            if (tokenType == null) {
+                return true;
+            }
+
+            return tokenType.equals(claimTokenType);
         } catch (Exception e) {
             logger.warn("Token validation failed: {}", e.getMessage());
             return false;

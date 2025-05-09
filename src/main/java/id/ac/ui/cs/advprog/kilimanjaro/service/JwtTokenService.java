@@ -19,6 +19,15 @@ public interface JwtTokenService {
     boolean validateToken(String token);
 
     /**
+     * Validates if a token is valid and not expired and is of the same type
+     *
+     * @param token The JWT token to validate
+     * @param tokenType The type of token to validate
+     * @return true if valid, false otherwise
+     */
+    boolean validateToken(String token, String tokenType);
+
+    /**
      * Refreshes an access token using a refresh token
      *
      * @param refreshToken The refresh token
