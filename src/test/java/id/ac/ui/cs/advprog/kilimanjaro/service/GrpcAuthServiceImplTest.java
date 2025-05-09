@@ -93,7 +93,7 @@ public class GrpcAuthServiceImplTest {
                 .setMetadata(mockMetadata)
                 .build();
 
-        when(jwtTokenService.validateToken(mockToken)).thenReturn(true);
+        when(jwtTokenService.validateToken(mockToken, "access")).thenReturn(true);
         when(userMapperService.getUserDataFromToken(mockToken)).thenReturn(mockUserData);
 
         // Act
@@ -120,7 +120,7 @@ public class GrpcAuthServiceImplTest {
                 .setMetadata(mockMetadata)
                 .build();
 
-        when(jwtTokenService.validateToken(mockToken)).thenReturn(true);
+        when(jwtTokenService.validateToken(mockToken, "access")).thenReturn(true);
 
         // Act
         grpcAuthServiceImpl.validateToken(request, tokenValidationResponseObserver);
@@ -148,7 +148,7 @@ public class GrpcAuthServiceImplTest {
                 .setMetadata(mockMetadata)
                 .build();
 
-        when(jwtTokenService.validateToken("invalid.token")).thenReturn(false);
+        when(jwtTokenService.validateToken("invalid.token", "access")).thenReturn(false);
 
         // Act
         grpcAuthServiceImpl.validateToken(request, tokenValidationResponseObserver);
@@ -176,7 +176,8 @@ public class GrpcAuthServiceImplTest {
                 .setMetadata(mockMetadata)
                 .build();
 
-        when(jwtTokenService.validateToken(mockToken)).thenThrow(new RuntimeException("Token validation failed"));
+        when(jwtTokenService.validateToken(mockToken, "access"))
+                .thenThrow(new RuntimeException("Token validation failed"));
 
         // Act
         grpcAuthServiceImpl.validateToken(request, tokenValidationResponseObserver);
@@ -191,6 +192,33 @@ public class GrpcAuthServiceImplTest {
         assertNotEquals(0, response.getStatus().getCode());
         assertEquals("Token validation failed", response.getStatus().getMessage());
     }
+
+    @Test
+    void validateToken_RefreshToken_ShouldReturnInvalidResponse() {
+        // Arrange
+        TokenValidationRequest request = TokenValidationRequest.newBuilder()
+                .setToken("refresh.token")
+                .setIncludeUserData(false)
+                .setMetadata(mockMetadata)
+                .build();
+
+        when(jwtTokenService.validateToken("refresh.token", "access")).thenReturn(false);
+
+        // Act
+        grpcAuthServiceImpl.validateToken(request, tokenValidationResponseObserver);
+
+        // Assert
+        ArgumentCaptor<TokenValidationResponse> responseCaptor = ArgumentCaptor.forClass(TokenValidationResponse.class);
+        verify(tokenValidationResponseObserver).onNext(responseCaptor.capture());
+        verify(tokenValidationResponseObserver).onCompleted();
+
+        TokenValidationResponse response = responseCaptor.getValue();
+        assertFalse(response.getValid());
+        assertNotEquals(0, response.getStatus().getCode());
+
+        verify(userMapperService, never()).getUserDataFromToken(any());
+    }
+
 
     @Test
     void refreshToken_ValidRefreshToken_ShouldReturnNewTokenPair() {
