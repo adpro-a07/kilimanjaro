@@ -1,6 +1,9 @@
 package id.ac.ui.cs.advprog.kilimanjaro.authentication;
 
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.AuthenticationException;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.interfaces.JwtTokenGenerator;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.interfaces.JwtTokenParser;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.interfaces.JwtTokenValidator;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
 import io.jsonwebtoken.*;
 import org.slf4j.Logger;
@@ -14,7 +17,7 @@ import java.util.*;
 import java.util.function.Function;
 
 @Component
-public class JwtTokenProviderImpl implements JwtTokenProvider {
+public class JwtTokenProviderImpl implements JwtTokenGenerator, JwtTokenParser, JwtTokenValidator {
     private static final Logger logger = LoggerFactory.getLogger(JwtTokenProviderImpl.class);
 
     private static final String TOKEN_TYPE_ACCESS = "access";
