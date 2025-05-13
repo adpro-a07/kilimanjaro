@@ -27,7 +27,7 @@ USER ${USER_NAME}
 WORKDIR /opt/kilimanjaro
 COPY --from=builder --chown=${USER_UID}:${USER_GID} /src/kilimanjaro/build/libs/*.jar app.jar
 
-EXPOSE 3000
+EXPOSE 3000 9090
 
 # Configure JVM options for better container performance
 ENTRYPOINT ["java"]
