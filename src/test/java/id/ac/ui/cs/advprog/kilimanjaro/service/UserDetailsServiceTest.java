@@ -44,7 +44,8 @@ public class UserDetailsServiceTest {
         // Assert
         assertEquals("admin@example.com", userDetails.getUsername());
         assertEquals("verySecurePassword", userDetails.getPassword());
-        assertTrue(userDetails.getAuthorities().contains(new SimpleGrantedAuthority(UserRole.ADMIN.name())));
+        assertTrue(userDetails.getAuthorities()
+                .contains(new SimpleGrantedAuthority("ROLE_" + UserRole.ADMIN.name())));
         assertTrue(userDetails.isAccountNonExpired());
         assertTrue(userDetails.isAccountNonLocked());
         assertTrue(userDetails.isCredentialsNonExpired());
