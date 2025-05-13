@@ -108,9 +108,9 @@ public class AuthServiceImplTest {
         when(userRepository.existsByEmail("customer@example.com")).thenReturn(true);
 
         // Act & Assert
-        assertThrows(UserAlreadyExistsException.class, () -> {
-            authService.registerCustomer(registerCustomerRequest);
-        });
+        assertThrows(UserAlreadyExistsException.class, () ->
+            authService.registerCustomer(registerCustomerRequest)
+        );
         verify(userRepository, never()).save(any(Customer.class));
     }
 
@@ -136,9 +136,9 @@ public class AuthServiceImplTest {
         when(userRepository.existsByEmail("technician@example.com")).thenReturn(true);
 
         // Act & Assert
-        assertThrows(UserAlreadyExistsException.class, () -> {
-            authService.registerTechnician(registerTechnicianRequest);
-        });
+        assertThrows(UserAlreadyExistsException.class, () ->
+            authService.registerTechnician(registerTechnicianRequest)
+        );
         verify(userRepository, never()).save(any(Technician.class));
     }
 
@@ -148,9 +148,9 @@ public class AuthServiceImplTest {
         registerTechnicianRequest.setExperience(null);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            authService.registerTechnician(registerTechnicianRequest);
-        });
+        assertThrows(IllegalArgumentException.class, () ->
+            authService.registerTechnician(registerTechnicianRequest)
+        );
         verify(userRepository, never()).save(any(Technician.class));
     }
 
@@ -178,9 +178,9 @@ public class AuthServiceImplTest {
                 .thenThrow(new InvalidCredentialsException("Invalid username or password"));
 
         // Act & Assert
-        assertThrows(InvalidCredentialsException.class, () -> {
-            authService.login(loginRequest);
-        });
+        assertThrows(InvalidCredentialsException.class, () ->
+            authService.login(loginRequest)
+        );
     }
 
     @Test

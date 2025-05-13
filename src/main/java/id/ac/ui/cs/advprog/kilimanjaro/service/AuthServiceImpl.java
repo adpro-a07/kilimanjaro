@@ -58,6 +58,11 @@ public class AuthServiceImpl implements AuthService {
             throw new UserAlreadyExistsException("Email is already in use");
         }
 
+        // Check if the experience field is empty
+        if (registerRequest.getExperience() == null || registerRequest.getExperience().isEmpty()) {
+            throw new IllegalArgumentException("Experience is required");
+        }
+
         Technician newTechnician = new Technician.TechnicianBuilder()
                 .fullName(registerRequest.getFullName())
                 .email(registerRequest.getEmail())

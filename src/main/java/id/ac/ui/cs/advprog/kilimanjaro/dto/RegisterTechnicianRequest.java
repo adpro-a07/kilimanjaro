@@ -32,6 +32,7 @@ public class RegisterTechnicianRequest {
     @Size(max = 200, message = "Address must be less than 200 characters")
     private String address;
 
+    @NotBlank(message = "Experience is required")
     @Size(max = 500, message = "Experience must be less than 500 characters")
     private String experience;
 }
