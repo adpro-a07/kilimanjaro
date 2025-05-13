@@ -45,7 +45,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      * @return a UserDetails object that Spring Security can use
      */
     private UserDetails mapToUserDetails(BaseUser user) {
-        List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole().name()));
+        List<SimpleGrantedAuthority> authorities =
+                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
 
         return User.builder()
                 .username(user.getEmail())
