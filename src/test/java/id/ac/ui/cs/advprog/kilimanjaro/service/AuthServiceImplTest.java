@@ -140,6 +140,7 @@ public class AuthServiceImplTest {
             authService.registerTechnician(registerTechnicianRequest)
         );
         verify(userRepository, never()).save(any(Technician.class));
+
     }
 
     @Test
