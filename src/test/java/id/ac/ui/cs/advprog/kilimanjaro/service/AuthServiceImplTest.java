@@ -143,6 +143,18 @@ public class AuthServiceImplTest {
     }
 
     @Test
+    void registerTechnician_ShouldThrowException_WhenExperienceIsNull() {
+        // Arrange
+        registerTechnicianRequest.setExperience(null);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            authService.registerTechnician(registerTechnicianRequest);
+        });
+        verify(userRepository, never()).save(any(Technician.class));
+    }
+
+    @Test
     void login_ShouldReturnToken_WhenCredentialsAreValid() {
         JwtTokenService.TokenPair tokenPair =
                 new JwtTokenService.TokenPair("jwt-access-token", "jwt-refresh-token");
