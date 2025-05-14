@@ -27,7 +27,7 @@ public class AuthController {
         try {
             GenericResponse<Void> response = authService.registerCustomer(registerRequest);
             return new ResponseEntity<>(response, HttpStatus.CREATED);
-        } catch (UserAlreadyExistsException e) {
+        } catch (UserAlreadyExistsException | IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
