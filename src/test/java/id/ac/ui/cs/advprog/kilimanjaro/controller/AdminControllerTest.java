@@ -25,70 +25,75 @@ class AdminControllerTest {
     @InjectMocks
     private AdminController adminController;
 
-    private RegisterTechnicianRequest validRequest;
-    private GenericResponse<Void> successResponse;
+    private RegisterTechnicianRequest validTechnicianRegisterRequest;
+    private GenericResponse<Void> successRegistrationResponse;
 
     @BeforeEach
     void setUp() {
-        // Setup valid request
-        validRequest = new RegisterTechnicianRequest();
-        validRequest.setFullName("John Doe");
-        validRequest.setEmail("john@example.com");
-        validRequest.setPhoneNumber("+628123456789");
-        validRequest.setPassword("securePassword123");
-        validRequest.setAddress("123 Main St");
-        // Add any other required fields for RegisterTechnicianRequest
+        // Setup valid technician register request
+        validTechnicianRegisterRequest = new RegisterTechnicianRequest();
+        validTechnicianRegisterRequest.setFullName("Tech Smith");
+        validTechnicianRegisterRequest.setEmail("tech@example.com");
+        validTechnicianRegisterRequest.setPhoneNumber("08765432100");
+        validTechnicianRegisterRequest.setPassword1("Password123!");
+        validTechnicianRegisterRequest.setPassword2("Password123!");
+        validTechnicianRegisterRequest.setAddress("456 Tech Ave");
+        validTechnicianRegisterRequest.setExperience("5 years in electronics repair");
 
-        successResponse = new GenericResponse<>(
+        successRegistrationResponse = new GenericResponse<>(
                 true,
-                "Technician registered successfully",
+                "Registration successful",
                 null
         );
+
     }
 
     @Test
-    void registerTechnician_WithValidRequest_ReturnsCreated() throws UserAlreadyExistsException {
-        // Arrange
-        when(authService.registerTechnician(validRequest)).thenReturn(successResponse);
+    void registerTechnician_WithValidRequest_ReturnsCreated() {
+        when(authService.registerTechnician(validTechnicianRegisterRequest)).thenReturn(successRegistrationResponse);
 
-        // Act
-        ResponseEntity<?> response = adminController.registerTechnician(validRequest);
+        ResponseEntity<?> response = adminController.registerTechnician(validTechnicianRegisterRequest);
 
-        // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(successResponse, response.getBody());
-        verify(authService, times(1)).registerTechnician(validRequest);
+        assertEquals(successRegistrationResponse, response.getBody());
+        verify(authService, times(1)).registerTechnician(validTechnicianRegisterRequest);
     }
 
     @Test
-    void registerTechnician_WhenUserExists_ReturnsBadRequest() throws UserAlreadyExistsException {
-        // Arrange
-        String errorMessage = "User with email john.doe@example.com already exists";
-        when(authService.registerTechnician(validRequest))
-                .thenThrow(new UserAlreadyExistsException(errorMessage));
+    void registerTechnician_WhenUserExists_ReturnsBadRequest() {
+        when(authService.registerTechnician(validTechnicianRegisterRequest))
+                .thenThrow(new UserAlreadyExistsException("Email already in use"));
 
-        // Act
-        ResponseEntity<?> response = adminController.registerTechnician(validRequest);
+        ResponseEntity<?> response = adminController.registerTechnician(validTechnicianRegisterRequest);
 
-        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(errorMessage, response.getBody());
-        verify(authService, times(1)).registerTechnician(validRequest);
+        assertEquals("Email already in use", response.getBody());
+        verify(authService, times(1)).registerTechnician(validTechnicianRegisterRequest);
     }
 
     @Test
-    void registerTechnician_WithUnexpectedException_ThrowsException() {
-        // Arrange
-        String errorMessage = "Some unexpected error";
-        RuntimeException exception = new RuntimeException(errorMessage);
-        when(authService.registerTechnician(validRequest)).thenThrow(exception);
+    void registerTechnician_WithPasswordMismatch_ReturnsBadRequest() {
+        validTechnicianRegisterRequest.setPassword2("DifferentPassword123!");
+        when(authService.registerTechnician(validTechnicianRegisterRequest))
+                .thenThrow(new IllegalArgumentException("Passwords do not match"));
 
-        // Act & Assert
-        Exception thrown = assertThrows(RuntimeException.class, () ->
-            adminController.registerTechnician(validRequest)
-        );
+        ResponseEntity<?> response = adminController.registerTechnician(validTechnicianRegisterRequest);
 
-        assertEquals(errorMessage, thrown.getMessage());
-        verify(authService, times(1)).registerTechnician(validRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Passwords do not match", response.getBody());
+        verify(authService, times(1)).registerTechnician(validTechnicianRegisterRequest);
+    }
+
+    @Test
+    void registerTechnician_WithMissingExperience_ReturnsBadRequest() {
+        validTechnicianRegisterRequest.setExperience(null);
+        when(authService.registerTechnician(validTechnicianRegisterRequest))
+                .thenThrow(new IllegalArgumentException("Experience is required"));
+
+        ResponseEntity<?> response = adminController.registerTechnician(validTechnicianRegisterRequest);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Experience is required", response.getBody());
+        verify(authService, times(1)).registerTechnician(validTechnicianRegisterRequest);
     }
 }

@@ -2,10 +2,7 @@ package id.ac.ui.cs.advprog.kilimanjaro.controller;
 
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.GenericResponse;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.LoginResponse;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.LoginRequest;
-import id.ac.ui.cs.advprog.kilimanjaro.dto.RegisterCustomerRequest;
+import id.ac.ui.cs.advprog.kilimanjaro.dto.*;
 import id.ac.ui.cs.advprog.kilimanjaro.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,30 +25,38 @@ class AuthControllerTest {
     @InjectMocks
     private AuthController authController;
 
-    private RegisterCustomerRequest validRegisterRequest;
+    private RegisterCustomerRequest validCustomerRegisterRequest;
     private LoginRequest validLoginRequest;
     private GenericResponse<LoginResponse> successLoginResponse;
     private GenericResponse<Void> successRegistrationResponse;
 
     @BeforeEach
     void setUp() {
-        validRegisterRequest = new RegisterCustomerRequest();
-        validRegisterRequest.setFullName("John Doe");
-        validRegisterRequest.setEmail("john@example.com");
-        validRegisterRequest.setPhoneNumber("+628123456789");
-        validRegisterRequest.setPassword("securePassword123");
-        validRegisterRequest.setAddress("123 Main St");
+        // Setup valid customer register request
+        validCustomerRegisterRequest = new RegisterCustomerRequest();
+        validCustomerRegisterRequest.setFullName("John Doe");
+        validCustomerRegisterRequest.setEmail("john@example.com");
+        validCustomerRegisterRequest.setPhoneNumber("08123456789");
+        validCustomerRegisterRequest.setPassword1("Password123!"); // Changed to match implementation
+        validCustomerRegisterRequest.setPassword2("Password123!"); // Added confirmation password
+        validCustomerRegisterRequest.setAddress("123 Main St");
 
+        // Setup valid login request
         validLoginRequest = new LoginRequest();
         validLoginRequest.setEmail("john@example.com");
-        validLoginRequest.setPassword("securePassword123");
+        validLoginRequest.setPassword("Password123!");
+
+        // Setup success responses
+        LoginResponse loginResponseData = new LoginResponse(
+                "jwt-access-token",
+                "jwt-refresh-token",
+                "john@example.com"
+        );
 
         successLoginResponse = new GenericResponse<>(
                 true,
                 "Login successful",
-                new LoginResponse("jwt.access-token.here",
-                        "jwt.refresh-token.here",
-                        "Bearer")
+                loginResponseData
         );
 
         successRegistrationResponse = new GenericResponse<>(
@@ -62,30 +67,43 @@ class AuthControllerTest {
     }
 
     @Test
-    void registerCustomer_WithValidRequest_ReturnsCreated() throws UserAlreadyExistsException {
-        when(authService.registerCustomer(validRegisterRequest)).thenReturn(successRegistrationResponse);
+    void registerCustomer_WithValidRequest_ReturnsCreated() {
+        when(authService.registerCustomer(validCustomerRegisterRequest)).thenReturn(successRegistrationResponse);
 
-        ResponseEntity<?> response = authController.registerCustomer(validRegisterRequest);
+        ResponseEntity<?> response = authController.registerCustomer(validCustomerRegisterRequest);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(successRegistrationResponse, response.getBody());
-        verify(authService, times(1)).registerCustomer(validRegisterRequest);
+        verify(authService, times(1)).registerCustomer(validCustomerRegisterRequest);
     }
 
     @Test
-    void registerCustomer_WhenUserExists_ReturnsBadRequest() throws UserAlreadyExistsException {
-        when(authService.registerCustomer(validRegisterRequest))
+    void registerCustomer_WhenUserExists_ReturnsBadRequest() {
+        when(authService.registerCustomer(validCustomerRegisterRequest))
                 .thenThrow(new UserAlreadyExistsException("Email already in use"));
 
-        ResponseEntity<?> response = authController.registerCustomer(validRegisterRequest);
+        ResponseEntity<?> response = authController.registerCustomer(validCustomerRegisterRequest);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Email already in use", response.getBody());
-        verify(authService, times(1)).registerCustomer(validRegisterRequest);
+        verify(authService, times(1)).registerCustomer(validCustomerRegisterRequest);
     }
 
     @Test
-    void loginUser_WithValidCredentials_ReturnsOk() throws InvalidCredentialsException {
+    void registerCustomer_WithPasswordMismatch_ReturnsBadRequest() {
+        validCustomerRegisterRequest.setPassword2("DifferentPassword123!");
+        when(authService.registerCustomer(validCustomerRegisterRequest))
+                .thenThrow(new IllegalArgumentException("Passwords do not match"));
+
+        ResponseEntity<?> response = authController.registerCustomer(validCustomerRegisterRequest);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Passwords do not match", response.getBody());
+        verify(authService, times(1)).registerCustomer(validCustomerRegisterRequest);
+    }
+
+    @Test
+    void loginUser_WithValidCredentials_ReturnsOk() {
         when(authService.login(validLoginRequest)).thenReturn(successLoginResponse);
 
         ResponseEntity<?> response = authController.loginUser(validLoginRequest);
@@ -96,7 +114,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void loginUser_WithInvalidCredentials_ReturnsUnauthorized() throws InvalidCredentialsException {
+    void loginUser_WithInvalidCredentials_ReturnsUnauthorized() {
         when(authService.login(validLoginRequest))
                 .thenThrow(new InvalidCredentialsException("Invalid credentials"));
 
@@ -109,7 +127,7 @@ class AuthControllerTest {
 
     @Test
     void logoutUser_WithValidToken_ReturnsNoContent() {
-        String validToken = "Bearer jwt.token.here";
+        String validToken = "jwt-access-token";
 
         ResponseEntity<?> response = authController.logoutUser(validToken);
 

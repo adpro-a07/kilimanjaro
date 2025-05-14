@@ -52,21 +52,23 @@ public class AuthServiceImplTest {
         registerCustomerRequest = new RegisterCustomerRequest();
         registerCustomerRequest.setFullName("Test Customer");
         registerCustomerRequest.setEmail("customer@example.com");
-        registerCustomerRequest.setPassword("password123");
+        registerCustomerRequest.setPassword1("Password123!"); // Updated to match new field name and pattern
+        registerCustomerRequest.setPassword2("Password123!"); // Added password confirmation
         registerCustomerRequest.setPhoneNumber("123456789");
         registerCustomerRequest.setAddress("123 Customer Street");
 
         registerTechnicianRequest = new RegisterTechnicianRequest();
         registerTechnicianRequest.setFullName("Test Technician");
         registerTechnicianRequest.setEmail("technician@example.com");
-        registerTechnicianRequest.setPassword("password123");
+        registerTechnicianRequest.setPassword1("Password123!"); // Updated to match new field name and pattern
+        registerTechnicianRequest.setPassword2("Password123!"); // Added password confirmation
         registerTechnicianRequest.setPhoneNumber("987654321");
         registerTechnicianRequest.setAddress("456 Technician Avenue");
         registerTechnicianRequest.setExperience("5 years");
 
         loginRequest = new LoginRequest();
         loginRequest.setEmail("customer@example.com");
-        loginRequest.setPassword("password123");
+        loginRequest.setPassword("Password123!"); // Updated password to match the new pattern
 
         customer = new Customer.CustomerBuilder()
                 .fullName("Test Customer")
@@ -90,7 +92,7 @@ public class AuthServiceImplTest {
     void registerCustomer_ShouldCreateNewCustomer_WhenEmailIsUnique() {
         // Arrange
         when(userRepository.existsByEmail("customer@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
+        when(passwordEncoder.encode("Password123!")).thenReturn("encoded_password");
         when(userRepository.save(any(Customer.class))).thenReturn(customer);
 
         GenericResponse<Void> response = authService.registerCustomer(registerCustomerRequest);
@@ -109,7 +111,20 @@ public class AuthServiceImplTest {
 
         // Act & Assert
         assertThrows(UserAlreadyExistsException.class, () ->
-            authService.registerCustomer(registerCustomerRequest)
+                authService.registerCustomer(registerCustomerRequest)
+        );
+        verify(userRepository, never()).save(any(Customer.class));
+    }
+
+    @Test
+    void registerCustomer_ShouldThrowException_WhenPasswordsDoNotMatch() {
+        // Arrange
+        registerCustomerRequest.setPassword1("Password123!");
+        registerCustomerRequest.setPassword2("DifferentPassword123!");
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () ->
+                authService.registerCustomer(registerCustomerRequest)
         );
         verify(userRepository, never()).save(any(Customer.class));
     }
@@ -118,7 +133,7 @@ public class AuthServiceImplTest {
     void registerTechnician_ShouldCreateNewTechnician_WhenEmailIsUnique() {
         // Arrange
         when(userRepository.existsByEmail("technician@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
+        when(passwordEncoder.encode("Password123!")).thenReturn("encoded_password");
         when(userRepository.save(any(Technician.class))).thenReturn(technician);
 
         GenericResponse<Void> response = authService.registerTechnician(registerTechnicianRequest);
@@ -137,10 +152,22 @@ public class AuthServiceImplTest {
 
         // Act & Assert
         assertThrows(UserAlreadyExistsException.class, () ->
-            authService.registerTechnician(registerTechnicianRequest)
+                authService.registerTechnician(registerTechnicianRequest)
         );
         verify(userRepository, never()).save(any(Technician.class));
+    }
 
+    @Test
+    void registerTechnician_ShouldThrowException_WhenPasswordsDoNotMatch() {
+        // Arrange
+        registerTechnicianRequest.setPassword1("Password123!");
+        registerTechnicianRequest.setPassword2("DifferentPassword123!");
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () ->
+                authService.registerTechnician(registerTechnicianRequest)
+        );
+        verify(userRepository, never()).save(any(Technician.class));
     }
 
     @Test
@@ -150,7 +177,7 @@ public class AuthServiceImplTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () ->
-            authService.registerTechnician(registerTechnicianRequest)
+                authService.registerTechnician(registerTechnicianRequest)
         );
         verify(userRepository, never()).save(any(Technician.class));
     }
@@ -180,7 +207,7 @@ public class AuthServiceImplTest {
 
         // Act & Assert
         assertThrows(InvalidCredentialsException.class, () ->
-            authService.login(loginRequest)
+                authService.login(loginRequest)
         );
     }
 
