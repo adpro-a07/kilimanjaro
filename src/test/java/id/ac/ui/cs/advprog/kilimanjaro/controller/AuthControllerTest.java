@@ -32,21 +32,18 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Setup valid customer register request
         validCustomerRegisterRequest = new RegisterCustomerRequest();
         validCustomerRegisterRequest.setFullName("John Doe");
         validCustomerRegisterRequest.setEmail("john@example.com");
         validCustomerRegisterRequest.setPhoneNumber("08123456789");
-        validCustomerRegisterRequest.setPassword1("Password123!"); // Changed to match implementation
-        validCustomerRegisterRequest.setPassword2("Password123!"); // Added confirmation password
+        validCustomerRegisterRequest.setPassword1("Password123!");
+        validCustomerRegisterRequest.setPassword2("Password123!");
         validCustomerRegisterRequest.setAddress("123 Main St");
 
-        // Setup valid login request
         validLoginRequest = new LoginRequest();
         validLoginRequest.setEmail("john@example.com");
         validLoginRequest.setPassword("Password123!");
 
-        // Setup success responses
         LoginResponse loginResponseData = new LoginResponse(
                 "jwt-access-token",
                 "jwt-refresh-token",
@@ -78,27 +75,27 @@ class AuthControllerTest {
     }
 
     @Test
-    void registerCustomer_WhenUserExists_ReturnsBadRequest() {
+    void registerCustomer_WhenUserExists_ThrowsException() {
         when(authService.registerCustomer(validCustomerRegisterRequest))
                 .thenThrow(new UserAlreadyExistsException("Email already in use"));
 
-        ResponseEntity<?> response = authController.registerCustomer(validCustomerRegisterRequest);
+        UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class, () ->
+                authController.registerCustomer(validCustomerRegisterRequest));
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals("Email already in use", response.getBody());
+        assertEquals("Email already in use", ex.getMessage());
         verify(authService, times(1)).registerCustomer(validCustomerRegisterRequest);
     }
 
     @Test
-    void registerCustomer_WithPasswordMismatch_ReturnsBadRequest() {
+    void registerCustomer_WithPasswordMismatch_ThrowsException() {
         validCustomerRegisterRequest.setPassword2("DifferentPassword123!");
         when(authService.registerCustomer(validCustomerRegisterRequest))
                 .thenThrow(new IllegalArgumentException("Passwords do not match"));
 
-        ResponseEntity<?> response = authController.registerCustomer(validCustomerRegisterRequest);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                authController.registerCustomer(validCustomerRegisterRequest));
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals("Passwords do not match", response.getBody());
+        assertEquals("Passwords do not match", ex.getMessage());
         verify(authService, times(1)).registerCustomer(validCustomerRegisterRequest);
     }
 
@@ -114,14 +111,14 @@ class AuthControllerTest {
     }
 
     @Test
-    void loginUser_WithInvalidCredentials_ReturnsUnauthorized() {
+    void loginUser_WithInvalidCredentials_ThrowsException() {
         when(authService.login(validLoginRequest))
                 .thenThrow(new InvalidCredentialsException("Invalid credentials"));
 
-        ResponseEntity<?> response = authController.loginUser(validLoginRequest);
+        InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class, () ->
+                authController.loginUser(validLoginRequest));
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertEquals("Invalid credentials", response.getBody());
+        assertEquals("Invalid credentials", ex.getMessage());
         verify(authService, times(1)).login(validLoginRequest);
     }
 
@@ -143,6 +140,7 @@ class AuthControllerTest {
         ResponseEntity<?> response = authController.logoutUser(emptyToken);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertNull(response.getBody());
         verify(authService, times(1)).logout(emptyToken);
     }
 }

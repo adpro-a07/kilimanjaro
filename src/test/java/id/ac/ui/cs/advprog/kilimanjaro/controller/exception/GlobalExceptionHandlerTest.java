@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.kilimanjaro.controller.exception;
 
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.GenericResponse;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -164,5 +166,50 @@ class GlobalExceptionHandlerTest {
         assertNotNull(response.getBody());
         assertFalse(response.getBody().isSuccess());
         assertEquals("An unexpected error occurred", response.getBody().getMessage());
+    }
+
+    @Test
+    void handleIllegalArgument_ShouldReturnBadRequestStatus() {
+        // Arrange
+        IllegalArgumentException exception = new IllegalArgumentException("Invalid argument");
+
+        // Act
+        ResponseEntity<GenericResponse<Void>> response = globalExceptionHandler.handleIllegalArgument(exception);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isSuccess());
+        assertEquals("Invalid argument", response.getBody().getMessage());
+    }
+
+    @Test
+    void handleInvalidCredentials_ShouldReturnUnauthorizedStatus() {
+        // Arrange
+        InvalidCredentialsException exception = new InvalidCredentialsException("Invalid credentials");
+
+        // Act
+        ResponseEntity<GenericResponse<Void>> response = globalExceptionHandler.handleInvalidCredentials(exception);
+
+        // Assert
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isSuccess());
+        assertEquals("Invalid email or password", response.getBody().getMessage());
+    }
+
+    @Test
+    void handleUserAlreadyExists_ShouldReturnConflictStatus() {
+        // Arrange
+        UserAlreadyExistsException exception = new UserAlreadyExistsException("User already exists");
+
+        // Act
+        ResponseEntity<GenericResponse<Void>> response = globalExceptionHandler.handleUserAlreadyExists(exception);
+
+        // Assert
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isSuccess());
+        assertEquals("Email is already in use", response.getBody().getMessage());
     }
 }

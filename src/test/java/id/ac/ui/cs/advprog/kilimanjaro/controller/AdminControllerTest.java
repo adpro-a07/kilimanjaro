@@ -30,7 +30,6 @@ class AdminControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Setup valid technician register request
         validTechnicianRegisterRequest = new RegisterTechnicianRequest();
         validTechnicianRegisterRequest.setFullName("Tech Smith");
         validTechnicianRegisterRequest.setEmail("tech@example.com");
@@ -45,7 +44,6 @@ class AdminControllerTest {
                 "Registration successful",
                 null
         );
-
     }
 
     @Test
@@ -60,40 +58,48 @@ class AdminControllerTest {
     }
 
     @Test
-    void registerTechnician_WhenUserExists_ReturnsBadRequest() {
+    void registerTechnician_WhenUserExists_ThrowsExceptionHandledGlobally() {
         when(authService.registerTechnician(validTechnicianRegisterRequest))
                 .thenThrow(new UserAlreadyExistsException("Email already in use"));
 
-        ResponseEntity<?> response = adminController.registerTechnician(validTechnicianRegisterRequest);
+        UserAlreadyExistsException thrown = assertThrows(
+                UserAlreadyExistsException.class,
+                () -> adminController.registerTechnician(validTechnicianRegisterRequest)
+        );
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals("Email already in use", response.getBody());
+        assertEquals("Email already in use", thrown.getMessage());
         verify(authService, times(1)).registerTechnician(validTechnicianRegisterRequest);
     }
 
     @Test
-    void registerTechnician_WithPasswordMismatch_ReturnsBadRequest() {
+    void registerTechnician_WithPasswordMismatch_ThrowsExceptionHandledGlobally() {
         validTechnicianRegisterRequest.setPassword2("DifferentPassword123!");
+
         when(authService.registerTechnician(validTechnicianRegisterRequest))
                 .thenThrow(new IllegalArgumentException("Passwords do not match"));
 
-        ResponseEntity<?> response = adminController.registerTechnician(validTechnicianRegisterRequest);
+        IllegalArgumentException thrown = assertThrows(
+                IllegalArgumentException.class,
+                () -> adminController.registerTechnician(validTechnicianRegisterRequest)
+        );
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals("Passwords do not match", response.getBody());
+        assertEquals("Passwords do not match", thrown.getMessage());
         verify(authService, times(1)).registerTechnician(validTechnicianRegisterRequest);
     }
 
     @Test
-    void registerTechnician_WithMissingExperience_ReturnsBadRequest() {
+    void registerTechnician_WithMissingExperience_ThrowsExceptionHandledGlobally() {
         validTechnicianRegisterRequest.setExperience(null);
+
         when(authService.registerTechnician(validTechnicianRegisterRequest))
                 .thenThrow(new IllegalArgumentException("Experience is required"));
 
-        ResponseEntity<?> response = adminController.registerTechnician(validTechnicianRegisterRequest);
+        IllegalArgumentException thrown = assertThrows(
+                IllegalArgumentException.class,
+                () -> adminController.registerTechnician(validTechnicianRegisterRequest)
+        );
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals("Experience is required", response.getBody());
+        assertEquals("Experience is required", thrown.getMessage());
         verify(authService, times(1)).registerTechnician(validTechnicianRegisterRequest);
     }
 }
