@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.kilimanjaro.controller.exception;
 
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
+import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.GenericResponse;
 import io.grpc.StatusRuntimeException;
 import org.slf4j.Logger;
@@ -67,6 +69,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GenericResponse<Void>> handleGeneric(Exception ex) {
         logger.error("Unexpected error occurred", ex);
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<GenericResponse<Void>> handleInvalidCredentials(InvalidCredentialsException ex) {
+        logger.warn("Invalid credentials: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<GenericResponse<Void>> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+        logger.warn("User already exists: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.CONFLICT, "Email is already in use");
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<GenericResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        logger.warn("Illegal argument: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     private ResponseEntity<GenericResponse<Void>> buildErrorResponse(HttpStatus status, String message) {

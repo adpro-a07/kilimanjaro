@@ -1,6 +1,5 @@
 package id.ac.ui.cs.advprog.kilimanjaro.controller;
 
-import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.GenericResponse;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.RegisterTechnicianRequest;
 import id.ac.ui.cs.advprog.kilimanjaro.service.AuthService;
@@ -24,10 +23,6 @@ public class AdminController {
 
     @PostMapping("/technicians")
     public ResponseEntity<?> registerTechnician(@Valid @RequestBody RegisterTechnicianRequest registerRequest) {
-        try {
-            GenericResponse<Void> response = authService.registerTechnician(registerRequest);
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
-        } catch (UserAlreadyExistsException | IllegalArgumentException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
+        GenericResponse<Void> response = authService.registerTechnician(registerRequest);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }}
