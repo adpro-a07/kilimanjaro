@@ -13,6 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -44,10 +46,20 @@ class AuthControllerTest {
         validLoginRequest.setEmail("john@example.com");
         validLoginRequest.setPassword("Password123!");
 
+        UserResponseDto userResponseDto = UserResponseDto.builder()
+                .id(UUID.randomUUID())
+                .email("john@example.com")
+                .fullName("John Doe")
+                .phoneNumber("08123456789")
+                .role("CUSTOMER")
+                .address("123 Main St")
+                .build();
+
+
         LoginResponse loginResponseData = new LoginResponse(
                 "jwt-access-token",
                 "jwt-refresh-token",
-                "john@example.com"
+                userResponseDto
         );
 
         successLoginResponse = new GenericResponse<>(
@@ -125,6 +137,7 @@ class AuthControllerTest {
     @Test
     void logoutUser_WithValidToken_ReturnsNoContent() {
         String validToken = "jwt-access-token";
+        doNothing().when(authService).logout(validToken);
 
         ResponseEntity<?> response = authController.logoutUser(validToken);
 
@@ -136,6 +149,7 @@ class AuthControllerTest {
     @Test
     void logoutUser_WithEmptyToken_StillCallsService() {
         String emptyToken = "";
+        doNothing().when(authService).logout(emptyToken);
 
         ResponseEntity<?> response = authController.logoutUser(emptyToken);
 

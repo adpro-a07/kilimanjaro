@@ -3,6 +3,9 @@ package id.ac.ui.cs.advprog.kilimanjaro.service;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.*;
+import id.ac.ui.cs.advprog.kilimanjaro.mapper.UserDataMapper;
+import id.ac.ui.cs.advprog.kilimanjaro.mapper.UserDataMapperFactory;
+import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Customer;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Technician;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
@@ -18,15 +21,19 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenService jwtTokenService;
+    private final UserDataMapperFactory mapperFactory;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            JwtTokenService jwtTokenService,
-                           AuthenticationManager authenticationManager) {
+                           AuthenticationManager authenticationManager,
+                           UserDataMapperFactory mapperFactory
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtTokenService = jwtTokenService;
+        this.mapperFactory = mapperFactory;
     }
 
     @Override
@@ -104,10 +111,17 @@ public class AuthServiceImpl implements AuthService {
             String email = loginRequest.getEmail();
             JwtTokenService.TokenPair tokenPair = jwtTokenService.generateTokensFromEmail(email);
 
+            // Retrieve user instance (domain object) from your user service
+            BaseUser user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            UserDataMapper<BaseUser> mapper = mapperFactory.getMapper(user.getRole());
+            UserResponseDto userResponse = mapper.toUserResponseDto(user);
+
             return new GenericResponse<>(
                     true,
                     "Login successful",
-                    new LoginResponse(tokenPair.accessToken(), tokenPair.refreshToken(), email)
+                    new LoginResponse(tokenPair.accessToken(), tokenPair.refreshToken(), userResponse)
             );
         } catch (AuthenticationException e) {
             throw new InvalidCredentialsException("Invalid username or password");

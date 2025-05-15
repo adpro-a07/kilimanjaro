@@ -3,8 +3,12 @@ package id.ac.ui.cs.advprog.kilimanjaro.service;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.InvalidCredentialsException;
 import id.ac.ui.cs.advprog.kilimanjaro.authentication.exceptions.UserAlreadyExistsException;
 import id.ac.ui.cs.advprog.kilimanjaro.dto.*;
+import id.ac.ui.cs.advprog.kilimanjaro.mapper.UserDataMapper;
+import id.ac.ui.cs.advprog.kilimanjaro.mapper.UserDataMapperFactory;
+import id.ac.ui.cs.advprog.kilimanjaro.model.BaseUser;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Customer;
 import id.ac.ui.cs.advprog.kilimanjaro.model.Technician;
+import id.ac.ui.cs.advprog.kilimanjaro.model.enums.UserRole;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -37,6 +43,12 @@ public class AuthServiceImplTest {
 
     @Mock
     private Authentication authentication;
+
+    @Mock
+    private UserDataMapperFactory mapperFactory;
+
+    @Mock
+    private UserDataMapper<BaseUser> mapper;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -87,6 +99,8 @@ public class AuthServiceImplTest {
                 .experience("5 years in electronics")
                 .build();
     }
+
+
 
     @Test
     void registerCustomer_ShouldCreateNewCustomer_WhenEmailIsUnique() {
@@ -183,23 +197,6 @@ public class AuthServiceImplTest {
     }
 
     @Test
-    void login_ShouldReturnToken_WhenCredentialsAreValid() {
-        JwtTokenService.TokenPair tokenPair =
-                new JwtTokenService.TokenPair("jwt-access-token", "jwt-refresh-token");
-        // Arrange
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(authentication);
-        when(jwtTokenService.generateTokensFromEmail(eq("customer@example.com"))).thenReturn(tokenPair);
-
-        GenericResponse<LoginResponse> response = authService.login(loginRequest);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals("jwt-access-token", response.getData().getAccessToken());
-        assertEquals("customer@example.com", response.getData().getEmail());
-    }
-
-    @Test
     void login_ShouldThrowException_WhenCredentialsAreInvalid() {
         // Arrange
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
@@ -209,6 +206,45 @@ public class AuthServiceImplTest {
         assertThrows(InvalidCredentialsException.class, () ->
                 authService.login(loginRequest)
         );
+    }
+
+    @Test
+    void login_ShouldReturnTokenAndUser_WhenCredentialsAreValid() {
+        // Arrange
+        JwtTokenService.TokenPair tokenPair =
+                new JwtTokenService.TokenPair("jwt-access-token", "jwt-refresh-token");
+
+        when(userRepository.findByEmail(customer.getEmail())).thenReturn(Optional.of(customer));
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+
+        when(jwtTokenService.generateTokensFromEmail(customer.getEmail())).thenReturn(tokenPair);
+
+        when(mapperFactory.getMapper(UserRole.CUSTOMER)).thenReturn(mapper);
+        UserResponseDto mockUserData = UserResponseDto.builder()
+                .id(customer.getId())
+                .email(customer.getEmail())
+                .fullName(customer.getFullName())
+                .phoneNumber(customer.getPhoneNumber())
+                .role(customer.getRole().name())
+                .address(customer.getAddress())
+                .build();
+
+        when(mapper.toUserResponseDto(customer)).thenReturn(mockUserData);
+
+        // Act
+        GenericResponse<LoginResponse> response = authService.login(loginRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertEquals("Login successful", response.getMessage());
+
+        LoginResponse loginResponse = response.getData();
+        assertEquals("jwt-access-token", loginResponse.getAccessToken());
+        assertEquals("jwt-refresh-token", loginResponse.getRefreshToken());
+        assertEquals(mockUserData, loginResponse.getUser());
     }
 
     @Test
