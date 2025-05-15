@@ -57,9 +57,9 @@ public class CustomerUserDataMapperTest {
                     .thenReturn(identity);
 
             // Since getAddress() returns null, we expect a NullPointerException
-            assertThrows(NullPointerException.class, () -> {
-                new CustomerUserDataMapper().toUserData(customer);
-            });
+            assertThrows(NullPointerException.class, () ->
+                new CustomerUserDataMapper().toUserData(customer)
+            );
         }
     }
 
