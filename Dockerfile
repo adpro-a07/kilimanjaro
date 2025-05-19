@@ -27,8 +27,8 @@ USER ${USER_NAME}
 WORKDIR /opt/kilimanjaro
 COPY --from=builder --chown=${USER_UID}:${USER_GID} /src/kilimanjaro/build/libs/*.jar app.jar
 
-EXPOSE 3000 9090
+EXPOSE 8090 9090
 
 # Configure JVM options for better container performance
 ENTRYPOINT ["java"]
-CMD ["-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar", "--server.port=3000"]
+CMD ["-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar", "--server.port=8090"]
