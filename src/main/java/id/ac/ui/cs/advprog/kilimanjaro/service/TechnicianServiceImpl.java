@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.kilimanjaro.model.Technician;
 import id.ac.ui.cs.advprog.kilimanjaro.repository.TechnicianRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -15,6 +16,7 @@ public class TechnicianServiceImpl implements TechnicianService {
     private final TechnicianRepository technicianRepository;
 
     @Override
+    @Async
     @Transactional
     public void updateStats(UUID technicianId, Long amount) {
         if (technicianId == null) {
@@ -32,7 +34,6 @@ public class TechnicianServiceImpl implements TechnicianService {
         tech.setTotalJobsDone(tech.getTotalJobsDone() + 1);
         tech.setTotalIncome(tech.getTotalIncome() + amount);
 
-        // Save the updated technician
         technicianRepository.save(tech);
     }
 }
